@@ -6,6 +6,7 @@
 <title>Seminar Registration</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#1B2432;
@@ -491,6 +492,29 @@
 </div>
 
 <script>
+// ==== Supabase configuration ====
+// Fill these in with your project's values from Supabase: Settings > API
+const SUPABASE_URL = "https://vkhzzvojibqfqkryonng.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_o87jc053966MJjY-b4T5dA_SlJ7188K";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function mapRowToRecord(row){
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    lifeGuide: row.life_guide,
+    networkLeader: row.network_leader,
+    school: row.school,
+    status: row.status,
+    level: row.level,
+    profession: row.profession,
+    phone: row.phone,
+    paid: row.paid,
+    registeredAt: row.registered_at
+  };
+}
+
 let scanning = false;
 let scanStream = null;
 
@@ -524,8 +548,17 @@ function applySiteConfig(cfg){
 
 async function loadSiteConfig(){
   try{
-    const res = await window.storage.get('site-config', true);
-    if(res) return { ...DEFAULT_SITE_CONFIG, ...JSON.parse(res.value) };
+    const { data, error } = await sb.from('site_config').select('*').eq('id', 1).single();
+    if(error) throw error;
+    if(data){
+      return {
+        headline: data.headline,
+        subheadline: data.subheadline,
+        primaryColor: data.primary_color,
+        accentColor: data.accent_color,
+        photo: data.photo
+      };
+    }
   }catch(e){}
   return { ...DEFAULT_SITE_CONFIG };
 }
@@ -583,7 +616,14 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
   siteConfig = newConfig;
   applySiteConfig(siteConfig);
   try{
-    await window.storage.set('site-config', JSON.stringify(siteConfig), true);
+    const { error } = await sb.from('site_config').update({
+      headline: newConfig.headline,
+      subheadline: newConfig.subheadline,
+      primary_color: newConfig.primaryColor,
+      accent_color: newConfig.accentColor,
+      photo: newConfig.photo
+    }).eq('id', 1);
+    if(error) throw error;
     const confirmEl = document.getElementById('save-confirm');
     confirmEl.style.display = 'block';
     setTimeout(()=>{ confirmEl.style.display = 'none'; }, 3000);
@@ -682,8 +722,9 @@ let networkLeaderList = [];
 
 async function loadSchoolList(){
   try{
-    const res = await window.storage.get('school-list', true);
-    if(res) return JSON.parse(res.value);
+    const { data, error } = await sb.from('schools').select('name').order('name');
+    if(error) throw error;
+    return (data || []).map(r => r.name);
   }catch(e){}
   return [];
 }
@@ -714,16 +755,6 @@ function renderAdminSchoolList(){
   `).join('');
 }
 
-async function saveSchoolList(){
-  try{
-    await window.storage.set('school-list', JSON.stringify(schoolList), true);
-  }catch(e){
-    alert('Could not save the school list. Please try again.');
-  }
-  populateSchoolSelect();
-  renderAdminSchoolList();
-}
-
 document.getElementById('btn-add-school').addEventListener('click', async ()=>{
   const input = document.getElementById('admin-school-input');
   const name = input.value.trim();
@@ -732,20 +763,36 @@ document.getElementById('btn-add-school').addEventListener('click', async ()=>{
     input.value = '';
     return;
   }
-  schoolList.push(name);
-  input.value = '';
-  await saveSchoolList();
+  try{
+    const { error } = await sb.from('schools').insert({ name });
+    if(error) throw error;
+    input.value = '';
+    schoolList = await loadSchoolList();
+    populateSchoolSelect();
+    renderAdminSchoolList();
+  }catch(e){
+    alert('Could not save the school. Please try again.');
+  }
 });
 
 async function removeSchool(index){
-  schoolList.splice(index, 1);
-  await saveSchoolList();
+  const name = schoolList[index];
+  try{
+    const { error } = await sb.from('schools').delete().eq('name', name);
+    if(error) throw error;
+    schoolList = await loadSchoolList();
+    populateSchoolSelect();
+    renderAdminSchoolList();
+  }catch(e){
+    alert('Could not remove the school. Please try again.');
+  }
 }
 
 async function loadNetworkLeaderList(){
   try{
-    const res = await window.storage.get('network-leader-list', true);
-    if(res) return JSON.parse(res.value);
+    const { data, error } = await sb.from('network_leaders').select('name').order('name');
+    if(error) throw error;
+    return (data || []).map(r => r.name);
   }catch(e){}
   return [];
 }
@@ -776,16 +823,6 @@ function renderAdminNetworkLeaderList(){
   `).join('');
 }
 
-async function saveNetworkLeaderList(){
-  try{
-    await window.storage.set('network-leader-list', JSON.stringify(networkLeaderList), true);
-  }catch(e){
-    alert('Could not save the network leader list. Please try again.');
-  }
-  populateNetworkLeaderSelect();
-  renderAdminNetworkLeaderList();
-}
-
 document.getElementById('btn-add-network-leader').addEventListener('click', async ()=>{
   const input = document.getElementById('admin-network-leader-input');
   const name = input.value.trim();
@@ -794,14 +831,29 @@ document.getElementById('btn-add-network-leader').addEventListener('click', asyn
     input.value = '';
     return;
   }
-  networkLeaderList.push(name);
-  input.value = '';
-  await saveNetworkLeaderList();
+  try{
+    const { error } = await sb.from('network_leaders').insert({ name });
+    if(error) throw error;
+    input.value = '';
+    networkLeaderList = await loadNetworkLeaderList();
+    populateNetworkLeaderSelect();
+    renderAdminNetworkLeaderList();
+  }catch(e){
+    alert('Could not save the network leader. Please try again.');
+  }
 });
 
 async function removeNetworkLeader(index){
-  networkLeaderList.splice(index, 1);
-  await saveNetworkLeaderList();
+  const name = networkLeaderList[index];
+  try{
+    const { error } = await sb.from('network_leaders').delete().eq('name', name);
+    if(error) throw error;
+    networkLeaderList = await loadNetworkLeaderList();
+    populateNetworkLeaderSelect();
+    renderAdminNetworkLeaderList();
+  }catch(e){
+    alert('Could not remove the network leader. Please try again.');
+  }
 }
 
 async function registerUser(){
@@ -868,8 +920,22 @@ async function registerUser(){
   };
 
   try{
-    await window.storage.set('registrant:'+id, JSON.stringify(record), true);
-    await window.storage.set('me', JSON.stringify(record), false);
+    const { error } = await sb.from('registrants').insert({
+      id,
+      name: record.name,
+      address: record.address,
+      life_guide: record.lifeGuide,
+      network_leader: record.networkLeader,
+      school: record.school,
+      status: record.status,
+      level: record.level,
+      profession: record.profession,
+      phone: record.phone,
+      paid: record.paid,
+      registered_at: record.registeredAt
+    });
+    if(error) throw error;
+    localStorage.setItem('me', JSON.stringify(record));
   }catch(e){
     errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
     return;
@@ -900,8 +966,8 @@ async function renderMyId(){
   const wrap = document.getElementById('myid-content');
   let record = null;
   try{
-    const res = await window.storage.get('me', false);
-    if(res) record = JSON.parse(res.value);
+    const raw = localStorage.getItem('me');
+    if(raw) record = JSON.parse(raw);
   }catch(e){}
 
   if(!record){
@@ -965,12 +1031,13 @@ async function lookupId(idRaw){
   if(!id){ resultBox.innerHTML=''; return; }
   resultBox.innerHTML = '<p class="hint">Looking up…</p>';
   try{
-    const res = await window.storage.get('registrant:'+id, true);
-    if(!res){
+    const { data, error } = await sb.from('registrants').select('*').eq('id', id).maybeSingle();
+    if(error) throw error;
+    if(!data){
       resultBox.innerHTML = '<div class="not-found">No guest found for that ID.</div>';
       return;
     }
-    const r = JSON.parse(res.value);
+    const r = mapRowToRecord(data);
     resultBox.innerHTML = `
       <div class="result-card">
         <h3>Verified attendee</h3>
@@ -1050,20 +1117,13 @@ async function loadAllRegistrants(){
   const content = document.getElementById('admin-content');
   content.innerHTML = '<p class="hint">Loading…</p>';
   try{
-    const listRes = await window.storage.list('registrant:', true);
-    const keys = (listRes && listRes.keys) ? listRes.keys : [];
-    if(keys.length === 0){
+    const { data, error } = await sb.from('registrants').select('*').order('registered_at', { ascending: false });
+    if(error) throw error;
+    const records = (data || []).map(mapRowToRecord);
+    if(records.length === 0){
       content.innerHTML = '<div class="empty-state"><p>No guests registered yet.</p></div>';
       return;
     }
-    const records = [];
-    for(const key of keys){
-      try{
-        const res = await window.storage.get(key, true);
-        if(res) records.push(JSON.parse(res.value));
-      }catch(e){}
-    }
-    records.sort((a,b)=> new Date(b.registeredAt) - new Date(a.registeredAt));
     window.__allRecords = records;
 
     let rows = records.map(r => `
@@ -1134,8 +1194,8 @@ document.getElementById('btn-export').addEventListener('click', exportCsv);
   networkLeaderList = await loadNetworkLeaderList();
   populateNetworkLeaderSelect();
   try{
-    const res = await window.storage.get('me', false);
-    if(res){
+    const raw = localStorage.getItem('me');
+    if(raw){
       showView('myid');
       return;
     }
