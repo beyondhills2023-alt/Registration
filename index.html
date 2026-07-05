@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --navy:#1B2432;
@@ -146,7 +147,20 @@
     margin-top:6px;
   }
   .badge .name{font-size:16px; font-weight:700; margin:10px 0 2px;}
+  .badge .first-name{font-size:22px; font-weight:800; margin:10px 0 0; color:var(--navy);}
   .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
+  .badge .photo-circle{
+    width:88px; height:88px; border-radius:50%; object-fit:cover;
+    border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    margin:-44px auto 0; display:block; background:var(--paper-dark);
+  }
+  .badge .photo-circle-placeholder{
+    width:88px; height:88px; border-radius:50%;
+    border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    margin:-44px auto 0; background:var(--paper-dark);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:var(--ink-soft); text-align:center;
+  }
   .badge .serial{
     font-family:var(--mono);
     font-size:13px;
@@ -352,9 +366,69 @@
         <span>I have already paid the seminar registration fee.</span>
       </label>
 
+      <label for="f-photo">Photo (optional — you can add this later)</label>
+      <input type="file" id="f-photo" accept="image/*">
+      <div class="photo-preview" id="f-photo-preview">No photo set</div>
+
+      <label for="f-username">Choose a username</label>
+      <input type="text" id="f-username" placeholder="e.g. juandelacruz" autocapitalize="none">
+      <p class="hint">You'll use this to log back in later and edit your info or add a photo.</p>
+
+      <label for="f-password">Choose a password</label>
+      <input type="password" id="f-password" placeholder="At least 6 characters">
+
       <button class="btn btn-primary btn-block" id="btn-register">Generate my ID</button>
       <div id="register-error"></div>
       <p class="hint">Submitting saves your details and generates a personal QR code and ID number.</p>
+    </section>
+
+    <!-- GUEST LOGIN -->
+    <section id="view-guest-login" class="view">
+      <div class="login-box">
+        <div class="lock-icon">&#128100;</div>
+        <h3>Log in to my ID</h3>
+        <p>Enter the username and password you set when you registered.</p>
+        <input type="text" id="guest-username" placeholder="Username" style="letter-spacing:normal;">
+        <input type="password" id="guest-password" placeholder="Password" style="letter-spacing:normal;">
+        <br>
+        <button class="btn btn-primary" onclick="tryGuestLogin()">Log in</button>
+        <div class="gate-error" id="guest-login-error">Incorrect username or password.</div>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+      </div>
+    </section>
+
+    <!-- EDIT PROFILE (guest) -->
+    <section id="view-edit-profile" class="view">
+      <div class="top-actions">
+        <strong style="font-size:14px;">Edit my info</strong>
+        <button class="link-btn" onclick="logout('guest')">Log out</button>
+      </div>
+
+      <label for="e-photo">Photo</label>
+      <input type="file" id="e-photo" accept="image/*">
+      <div class="photo-preview" id="e-photo-preview">No photo set</div>
+
+      <label for="e-name">Full name</label>
+      <input type="text" id="e-name">
+
+      <label for="e-address">Address</label>
+      <input type="text" id="e-address">
+
+      <label for="e-life-guide">Life guide</label>
+      <input type="text" id="e-life-guide">
+
+      <label for="e-network-leader">Network leader</label>
+      <input type="text" id="e-network-leader">
+
+      <label for="e-school">School</label>
+      <input type="text" id="e-school">
+
+      <label for="e-phone">Phone number</label>
+      <input type="tel" id="e-phone">
+
+      <button class="btn btn-primary btn-block" id="btn-save-profile">Save changes</button>
+      <div id="edit-profile-error"></div>
+      <div class="save-confirm" id="edit-profile-confirm">Saved.</div>
     </section>
 
     <!-- MY ID -->
@@ -486,6 +560,7 @@
   </main>
 
   <footer class="bottom-bar" id="bottom-bar">
+    <a onclick="showView('guest-login')">Log in to my ID</a>
     <a onclick="showView('staff-login')">Staff log in</a>
     <a onclick="showView('admin-login')">Admin log in</a>
   </footer>
@@ -511,7 +586,9 @@ function mapRowToRecord(row){
     profession: row.profession,
     phone: row.phone,
     paid: row.paid,
-    registeredAt: row.registered_at
+    registeredAt: row.registered_at,
+    username: row.username,
+    photo: row.photo
   };
 }
 
@@ -640,6 +717,7 @@ function showView(name){
   if(name==='myid') renderMyId();
   if(name==='customize') populateCustomizeForm();
   if(name==='admin'){ renderAdminSchoolList(); renderAdminNetworkLeaderList(); }
+  if(name==='edit-profile') populateEditProfileForm();
   if(name!=='verify') stopScan();
 }
 
@@ -663,9 +741,113 @@ function tryLogin(which){
   }
 }
 
+let currentGuestRecord = null;
+let editPhotoDraft = null;
+
+async function tryGuestLogin(){
+  const username = document.getElementById('guest-username').value.trim();
+  const password = document.getElementById('guest-password').value;
+  const errEl = document.getElementById('guest-login-error');
+  errEl.style.display = 'none';
+  if(!username || !password) return;
+  try{
+    const { data, error } = await sb.rpc('login_registrant', { p_username: username, p_password: password });
+    if(error) throw error;
+    if(!data || data.length === 0){
+      errEl.style.display = 'block';
+      return;
+    }
+    currentGuestRecord = mapRowToRecord(data[0]);
+    document.getElementById('guest-username').value = '';
+    document.getElementById('guest-password').value = '';
+    showView('edit-profile');
+  }catch(e){
+    errEl.style.display = 'block';
+  }
+}
+
+function populateEditProfileForm(){
+  if(!currentGuestRecord) return;
+  document.getElementById('e-name').value = currentGuestRecord.name || '';
+  document.getElementById('e-address').value = currentGuestRecord.address || '';
+  document.getElementById('e-life-guide').value = currentGuestRecord.lifeGuide || '';
+  document.getElementById('e-network-leader').value = currentGuestRecord.networkLeader || '';
+  document.getElementById('e-school').value = currentGuestRecord.school || '';
+  document.getElementById('e-phone').value = currentGuestRecord.phone || '';
+  editPhotoDraft = currentGuestRecord.photo || null;
+  const preview = document.getElementById('e-photo-preview');
+  if(editPhotoDraft){
+    preview.style.backgroundImage = `url(${editPhotoDraft})`;
+    preview.textContent = '';
+  }else{
+    preview.style.backgroundImage = 'none';
+    preview.textContent = 'No photo set';
+  }
+  document.getElementById('edit-profile-error').innerHTML = '';
+  document.getElementById('edit-profile-confirm').style.display = 'none';
+}
+
+document.getElementById('e-photo').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    if(reader.result.length > 4500000){
+      alert('That photo is too large. Please choose a smaller image.');
+      return;
+    }
+    editPhotoDraft = reader.result;
+    const preview = document.getElementById('e-photo-preview');
+    preview.style.backgroundImage = `url(${editPhotoDraft})`;
+    preview.textContent = '';
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-save-profile').addEventListener('click', async ()=>{
+  if(!currentGuestRecord) return;
+  const errBox = document.getElementById('edit-profile-error');
+  errBox.innerHTML = '';
+  const updated = {
+    name: document.getElementById('e-name').value.trim(),
+    address: document.getElementById('e-address').value.trim(),
+    lifeGuide: document.getElementById('e-life-guide').value.trim(),
+    networkLeader: document.getElementById('e-network-leader').value.trim(),
+    school: document.getElementById('e-school').value.trim(),
+    phone: document.getElementById('e-phone').value.trim(),
+    photo: editPhotoDraft
+  };
+  if(!updated.name || !updated.address || !updated.phone){
+    errBox.innerHTML = '<div class="error-box">Name, address, and phone can\'t be empty.</div>';
+    return;
+  }
+  try{
+    const { error } = await sb.from('registrants').update({
+      name: updated.name,
+      address: updated.address,
+      life_guide: updated.lifeGuide,
+      network_leader: updated.networkLeader,
+      school: updated.school,
+      phone: updated.phone,
+      photo: updated.photo
+    }).eq('id', currentGuestRecord.id);
+    if(error) throw error;
+    currentGuestRecord = { ...currentGuestRecord, ...updated };
+    const existingMe = JSON.parse(localStorage.getItem('me') || 'null');
+    if(existingMe && existingMe.id === currentGuestRecord.id){
+      localStorage.setItem('me', JSON.stringify(currentGuestRecord));
+    }
+    document.getElementById('edit-profile-confirm').style.display = 'block';
+    setTimeout(()=>{ document.getElementById('edit-profile-confirm').style.display = 'none'; }, 3000);
+  }catch(e){
+    errBox.innerHTML = '<div class="error-box">Could not save your changes. Please try again.</div>';
+  }
+});
+
 function logout(which){
   if(which==='staff') document.getElementById('staff-login-error').style.display='none';
   if(which==='admin') document.getElementById('admin-login-error').style.display='none';
+  if(which==='guest'){ currentGuestRecord = null; showView('register'); return; }
   showView('register');
 }
 
@@ -675,6 +857,28 @@ function genId(){
   for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
   return 'ID-' + s;
 }
+
+function firstNameOf(fullName){
+  return (fullName || '').trim().split(/\s+/)[0] || '';
+}
+
+let regPhotoDraft = null;
+document.getElementById('f-photo').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    if(reader.result.length > 4500000){
+      alert('That photo is too large. Please choose a smaller image.');
+      return;
+    }
+    regPhotoDraft = reader.result;
+    const preview = document.getElementById('f-photo-preview');
+    preview.style.backgroundImage = `url(${regPhotoDraft})`;
+    preview.textContent = '';
+  };
+  reader.readAsDataURL(file);
+});
 
 document.getElementById('f-status').addEventListener('change', (e)=>{
   const status = e.target.value;
@@ -870,6 +1074,8 @@ async function registerUser(){
   const profession = document.getElementById('f-profession').value.trim();
   const phone = document.getElementById('f-phone').value.trim();
   const paid = document.getElementById('f-paid').checked;
+  const username = document.getElementById('f-username').value.trim();
+  const password = document.getElementById('f-password').value;
   const errBox = document.getElementById('register-error');
   errBox.innerHTML = '';
 
@@ -905,6 +1111,14 @@ async function registerUser(){
     errBox.innerHTML = '<div class="error-box">Please confirm that you have paid the registration fee before generating an ID.</div>';
     return;
   }
+  if(!username || !password){
+    errBox.innerHTML = '<div class="error-box">Please choose a username and password so you can log back in later.</div>';
+    return;
+  }
+  if(password.length < 6){
+    errBox.innerHTML = '<div class="error-box">Password must be at least 6 characters.</div>';
+    return;
+  }
 
   const id = genId();
   const levelCombined = specificLevel ? `${gradeLevel} - ${specificLevel}` : gradeLevel;
@@ -916,7 +1130,9 @@ async function registerUser(){
     level: (status === 'Student' || status === 'Teacher') ? levelCombined : '',
     profession: status === 'Professional / Other' ? profession : '',
     phone, paid,
-    registeredAt: new Date().toISOString()
+    registeredAt: new Date().toISOString(),
+    username,
+    photo: regPhotoDraft
   };
 
   try{
@@ -932,12 +1148,19 @@ async function registerUser(){
       profession: record.profession,
       phone: record.phone,
       paid: record.paid,
-      registered_at: record.registeredAt
+      registered_at: record.registeredAt,
+      username: record.username,
+      password: password,
+      photo: record.photo
     });
     if(error) throw error;
     localStorage.setItem('me', JSON.stringify(record));
   }catch(e){
-    errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
+    if(String(e.message||'').toLowerCase().includes('username')){
+      errBox.innerHTML = '<div class="error-box">That username is already taken. Please choose another.</div>';
+    }else{
+      errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
+    }
     return;
   }
 
@@ -957,6 +1180,12 @@ async function registerUser(){
   document.getElementById('profession-wrap').style.display='none';
   document.getElementById('f-phone').value='';
   document.getElementById('f-paid').checked=false;
+  document.getElementById('f-username').value='';
+  document.getElementById('f-password').value='';
+  document.getElementById('f-photo').value='';
+  regPhotoDraft = null;
+  document.getElementById('f-photo-preview').style.backgroundImage = 'none';
+  document.getElementById('f-photo-preview').textContent = 'No photo set';
 
   showView('myid');
 }
@@ -981,14 +1210,18 @@ async function renderMyId(){
 
   wrap.innerHTML = `
     <div class="badge-wrap">
-      <div class="badge">
+      <div class="badge" id="id-badge-card">
         <div class="punch"></div>
         <div class="badge-head">
           <div class="org">Seminar ID</div>
           <div class="role">${escapeHtml(record.status)}</div>
         </div>
         <div class="qr-slot"><div id="qr-canvas"></div></div>
+        ${record.photo
+          ? `<img class="photo-circle" src="${record.photo}">`
+          : `<div class="photo-circle-placeholder">No photo</div>`}
         <div class="badge-body">
+          <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
           <div class="name">${escapeHtml(record.name)}</div>
           <div class="meta-line">${escapeHtml(record.school)}</div>
           ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
@@ -1003,6 +1236,7 @@ async function renderMyId(){
       </div>
     </div>
     <p class="hint" style="text-align:center;">Show this QR code at the seminar to be verified.</p>
+    <button class="btn btn-outline btn-block" id="btn-download-id">Download my ID as an image</button>
     <p style="text-align:center; margin-top:18px;">
       <button class="link-btn" onclick="showView('register')">Register another attendee on this device</button>
     </p>
@@ -1017,6 +1251,23 @@ async function renderMyId(){
     colorDark: '#1B2432',
     colorLight: '#ffffff'
   });
+
+  document.getElementById('btn-download-id').addEventListener('click', ()=>{
+    downloadBadgeImage(record.id);
+  });
+}
+
+async function downloadBadgeImage(id){
+  const card = document.getElementById('id-badge-card');
+  try{
+    const canvas = await html2canvas(card, { backgroundColor: '#ffffff', scale: 2 });
+    const link = document.createElement('a');
+    link.download = id + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    alert('Could not generate the image. Please try again.');
+  }
 }
 
 function escapeHtml(str){
