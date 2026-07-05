@@ -149,18 +149,45 @@
   .badge .name{font-size:16px; font-weight:700; margin:10px 0 2px;}
   .badge .first-name{font-size:22px; font-weight:800; margin:10px 0 0; color:var(--navy);}
   .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
-  .badge .photo-circle{
-    width:88px; height:88px; border-radius:50%; object-fit:cover;
+  .badge .photo-square{
+    width:88px; height:88px; border-radius:10px; object-fit:cover;
     border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
     margin:-44px auto 0; display:block; background:var(--paper-dark);
   }
-  .badge .photo-circle-placeholder{
-    width:88px; height:88px; border-radius:50%;
+  .badge .photo-square-placeholder{
+    width:88px; height:88px; border-radius:10px;
     border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
     margin:-44px auto 0; background:var(--paper-dark);
     display:flex; align-items:center; justify-content:center;
     font-size:11px; color:var(--ink-soft); text-align:center;
   }
+
+  /* Modal overlay (used for cropping and full ID view) */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,20,18,0.72);
+    display:none; align-items:center; justify-content:center;
+    z-index:1000; padding:20px;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal-box{
+    background:var(--paper); border-radius:12px; padding:20px;
+    max-width:360px; width:100%; max-height:90vh; overflow-y:auto;
+    text-align:center;
+  }
+  .modal-box h3{margin:0 0 4px; font-size:15px; color:var(--navy);}
+  .crop-container{
+    width:260px; height:260px; margin:14px auto; border-radius:10px;
+    overflow:hidden; position:relative; background:#222; touch-action:none;
+  }
+  .crop-container img{
+    position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none;
+    cursor:grab;
+  }
+  .crop-controls{display:flex; align-items:center; gap:10px; margin-top:6px;}
+  .crop-controls input[type=range]{flex:1;}
+  .modal-actions{display:flex; gap:10px; margin-top:16px;}
+  .modal-actions .btn{flex:1;}
+  #view-id-modal .badge{margin:0 auto;}
   .badge .serial{
     font-family:var(--mono);
     font-size:13px;
@@ -560,6 +587,37 @@
   </footer>
 </div>
 
+<!-- VIEW ID MODAL -->
+<div class="modal-overlay" id="view-id-modal">
+  <div class="modal-box">
+    <h3>Your ID</h3>
+    <div id="view-id-modal-content" style="margin-top:10px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeViewIdModal()">Close</button>
+      <button class="btn btn-primary" onclick="downloadBadgeImage(currentMyIdRecord.id, 'id-badge-card-modal')">Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- CROP PHOTO MODAL -->
+<div class="modal-overlay" id="crop-modal">
+  <div class="modal-box">
+    <h3>Adjust your photo</h3>
+    <p class="hint">Drag to reposition, use the slider to zoom.</p>
+    <div class="crop-container" id="crop-container">
+      <img id="crop-img" src="">
+    </div>
+    <div class="crop-controls">
+      <span class="hint">Zoom</span>
+      <input type="range" id="crop-zoom" min="100" max="300" value="100">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCropModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyCrop()">Use this photo</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==== Supabase configuration ====
 // Fill these in with your project's values from Supabase: Settings > API
@@ -790,19 +848,106 @@ function populateEditProfileForm(){
 document.getElementById('e-photo').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    if(reader.result.length > 4500000){
-      alert('That photo is too large. Please choose a smaller image.');
-      return;
-    }
-    editPhotoDraft = reader.result;
+  openCropModal(file, (croppedDataUrl)=>{
+    editPhotoDraft = croppedDataUrl;
     const preview = document.getElementById('e-photo-preview');
     preview.style.backgroundImage = `url(${editPhotoDraft})`;
     preview.textContent = '';
+  });
+  e.target.value = '';
+});
+
+// ==== Photo crop modal ====
+let cropState = { img: null, naturalW: 0, naturalH: 0, baseScale: 1, scale: 1, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, callback: null };
+const CROP_SIZE = 260;
+const CROP_OUTPUT = 480;
+
+function openCropModal(file, callback){
+  cropState.callback = callback;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = document.getElementById('crop-img');
+    img.onload = () => {
+      cropState.naturalW = img.naturalWidth;
+      cropState.naturalH = img.naturalHeight;
+      cropState.baseScale = Math.max(CROP_SIZE / cropState.naturalW, CROP_SIZE / cropState.naturalH);
+      cropState.scale = cropState.baseScale;
+      cropState.offsetX = (CROP_SIZE - cropState.naturalW * cropState.scale) / 2;
+      cropState.offsetY = (CROP_SIZE - cropState.naturalH * cropState.scale) / 2;
+      document.getElementById('crop-zoom').value = 100;
+      applyCropTransform();
+      document.getElementById('crop-modal').classList.add('active');
+    };
+    img.src = reader.result;
   };
   reader.readAsDataURL(file);
+}
+
+function clampCropOffsets(){
+  const dispW = cropState.naturalW * cropState.scale;
+  const dispH = cropState.naturalH * cropState.scale;
+  const minX = Math.min(0, CROP_SIZE - dispW);
+  const minY = Math.min(0, CROP_SIZE - dispH);
+  cropState.offsetX = Math.max(minX, Math.min(0, cropState.offsetX));
+  cropState.offsetY = Math.max(minY, Math.min(0, cropState.offsetY));
+}
+
+function applyCropTransform(){
+  clampCropOffsets();
+  const img = document.getElementById('crop-img');
+  img.style.width = (cropState.naturalW * cropState.scale) + 'px';
+  img.style.height = (cropState.naturalH * cropState.scale) + 'px';
+  img.style.left = cropState.offsetX + 'px';
+  img.style.top = cropState.offsetY + 'px';
+}
+
+document.getElementById('crop-zoom').addEventListener('input', (e)=>{
+  const factor = e.target.value / 100;
+  const newScale = cropState.baseScale * factor;
+  const cx = CROP_SIZE / 2, cy = CROP_SIZE / 2;
+  const imgCx = (cx - cropState.offsetX) / cropState.scale;
+  const imgCy = (cy - cropState.offsetY) / cropState.scale;
+  cropState.scale = newScale;
+  cropState.offsetX = cx - imgCx * cropState.scale;
+  cropState.offsetY = cy - imgCy * cropState.scale;
+  applyCropTransform();
 });
+
+const cropContainer = document.getElementById('crop-container');
+cropContainer.addEventListener('pointerdown', (e)=>{
+  cropState.dragging = true;
+  cropState.startX = e.clientX - cropState.offsetX;
+  cropState.startY = e.clientY - cropState.offsetY;
+  cropContainer.setPointerCapture(e.pointerId);
+});
+cropContainer.addEventListener('pointermove', (e)=>{
+  if(!cropState.dragging) return;
+  cropState.offsetX = e.clientX - cropState.startX;
+  cropState.offsetY = e.clientY - cropState.startY;
+  applyCropTransform();
+});
+cropContainer.addEventListener('pointerup', ()=>{ cropState.dragging = false; });
+cropContainer.addEventListener('pointercancel', ()=>{ cropState.dragging = false; });
+
+function closeCropModal(){
+  document.getElementById('crop-modal').classList.remove('active');
+  cropState.callback = null;
+}
+
+function applyCrop(){
+  const canvas = document.createElement('canvas');
+  canvas.width = CROP_OUTPUT;
+  canvas.height = CROP_OUTPUT;
+  const ctx = canvas.getContext('2d');
+  const img = document.getElementById('crop-img');
+  const sx = -cropState.offsetX / cropState.scale;
+  const sy = -cropState.offsetY / cropState.scale;
+  const sSize = CROP_SIZE / cropState.scale;
+  ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, CROP_OUTPUT, CROP_OUTPUT);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  if(cropState.callback) cropState.callback(dataUrl);
+  closeCropModal();
+}
 
 document.getElementById('btn-save-profile').addEventListener('click', async ()=>{
   if(!currentGuestRecord) return;
@@ -1177,6 +1322,48 @@ async function registerUser(){
 }
 document.getElementById('btn-register').addEventListener('click', registerUser);
 
+let currentMyIdRecord = null;
+
+function buildBadgeHtml(record, qrElId){
+  return `
+    <div class="badge" id="id-badge-card">
+      <div class="punch"></div>
+      <div class="badge-head">
+        <div class="org">Seminar ID</div>
+        <div class="role">${escapeHtml(record.status)}</div>
+      </div>
+      <div class="qr-slot"><div id="${qrElId}"></div></div>
+      ${record.photo
+        ? `<img class="photo-square" src="${record.photo}">`
+        : `<div class="photo-square-placeholder">No photo</div>`}
+      <div class="badge-body">
+        <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
+        <div class="name">${escapeHtml(record.name)}</div>
+        <div class="meta-line">${escapeHtml(record.school)}</div>
+        ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
+        ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
+        <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
+        <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
+        <div class="meta-line">${escapeHtml(record.address)}</div>
+        <div class="meta-line">${escapeHtml(record.phone)}</div>
+        <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
+        <div class="serial">${record.id}</div>
+      </div>
+    </div>`;
+}
+
+function renderQrInto(elId, text){
+  const holder = document.getElementById(elId);
+  holder.innerHTML = '';
+  new QRCode(holder, {
+    text: text,
+    width: 150,
+    height: 150,
+    colorDark: '#1B2432',
+    colorLight: '#ffffff'
+  });
+}
+
 async function renderMyId(){
   const wrap = document.getElementById('myid-content');
   let record = null;
@@ -1193,58 +1380,44 @@ async function renderMyId(){
       </div>`;
     return;
   }
+  currentMyIdRecord = record;
 
   wrap.innerHTML = `
-    <div class="badge-wrap">
-      <div class="badge" id="id-badge-card">
-        <div class="punch"></div>
-        <div class="badge-head">
-          <div class="org">Seminar ID</div>
-          <div class="role">${escapeHtml(record.status)}</div>
-        </div>
-        <div class="qr-slot"><div id="qr-canvas"></div></div>
-        ${record.photo
-          ? `<img class="photo-circle" src="${record.photo}">`
-          : `<div class="photo-circle-placeholder">No photo</div>`}
-        <div class="badge-body">
-          <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
-          <div class="name">${escapeHtml(record.name)}</div>
-          <div class="meta-line">${escapeHtml(record.school)}</div>
-          ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
-          ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
-          <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
-          <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
-          <div class="meta-line">${escapeHtml(record.address)}</div>
-          <div class="meta-line">${escapeHtml(record.phone)}</div>
-          <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
-          <div class="serial">${record.id}</div>
-        </div>
-      </div>
-    </div>
+    <div class="badge-wrap">${buildBadgeHtml(record, 'qr-canvas')}</div>
     <p class="hint" style="text-align:center;">Show this QR code at the seminar to be verified.</p>
-    <button class="btn btn-outline btn-block" id="btn-download-id">Download my ID as an image</button>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;" id="btn-view-id">View my ID</button>
+      <button class="btn btn-outline" style="flex:1;" id="btn-download-id">Download as image</button>
+    </div>
     <p style="text-align:center; margin-top:18px;">
       <button class="link-btn" onclick="showView('register')">Register another attendee on this device</button>
     </p>
   `;
 
-  const qrHolder = document.getElementById('qr-canvas');
-  qrHolder.innerHTML = '';
-  new QRCode(qrHolder, {
-    text: record.id,
-    width: 150,
-    height: 150,
-    colorDark: '#1B2432',
-    colorLight: '#ffffff'
-  });
+  renderQrInto('qr-canvas', record.id);
 
   document.getElementById('btn-download-id').addEventListener('click', ()=>{
-    downloadBadgeImage(record.id);
+    downloadBadgeImage(record.id, 'id-badge-card');
+  });
+  document.getElementById('btn-view-id').addEventListener('click', ()=>{
+    openViewIdModal();
   });
 }
 
-async function downloadBadgeImage(id){
-  const card = document.getElementById('id-badge-card');
+function openViewIdModal(){
+  if(!currentMyIdRecord) return;
+  const holder = document.getElementById('view-id-modal-content');
+  holder.innerHTML = buildBadgeHtml(currentMyIdRecord, 'qr-canvas-modal').replace('id="id-badge-card"', 'id="id-badge-card-modal"');
+  renderQrInto('qr-canvas-modal', currentMyIdRecord.id);
+  document.getElementById('view-id-modal').classList.add('active');
+}
+
+function closeViewIdModal(){
+  document.getElementById('view-id-modal').classList.remove('active');
+}
+
+async function downloadBadgeImage(id, cardElId){
+  const card = document.getElementById(cardElId || 'id-badge-card');
   try{
     const canvas = await html2canvas(card, { backgroundColor: '#ffffff', scale: 2 });
     const link = document.createElement('a');
