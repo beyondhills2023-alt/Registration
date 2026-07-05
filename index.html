@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seminar Registration</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<style>
+  :root{
+    --navy:#1B2432;
+    --navy-light:#2A3648;
+    --paper:#F7F5EE;
+    --paper-dark:#EAE6D9;
+    --brass:#B8912B;
+    --brass-light:#E8CE8B;
+    --teal:#2F6E62;
+    --teal-light:#DCEAE6;
+    --red:#B23A34;
+    --red-light:#F6E1DF;
+    --ink:#22221E;
+    --ink-soft:#6B6A62;
+    --mono: 'SF Mono', 'Consolas', 'Menlo', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--paper-dark);
+    color:var(--ink);
+  }
+  .app{
+    max-width:720px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper);
+    display:flex;
+    flex-direction:column;
+  }
+  header.top{
+    background:var(--navy);
+    color:var(--paper);
+    padding:22px 24px 18px;
+  }
+  header.top h1{
+    margin:0;
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.3px;
+  }
+  header.top p{
+    margin:4px 0 0;
+    font-size:13px;
+    color:#AEB8C8;
+  }
+  main{padding:24px; flex:1;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin:16px 0 6px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=tel], input[type=password], select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #CFCABA;
+    border-radius:6px;
+    background:#fff;
+    font-size:14.5px;
+    font-family:var(--sans);
+    color:var(--ink);
+  }
+  input:focus, select:focus{
+    outline:none;
+    border-color:var(--brass);
+    box-shadow:0 0 0 3px rgba(184,145,43,0.18);
+  }
+  .btn{
+    display:inline-block;
+    padding:11px 20px;
+    border-radius:6px;
+    border:none;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:var(--sans);
+  }
+  .btn-primary{background:var(--navy); color:var(--paper);}
+  .btn-primary:hover{background:var(--navy-light);}
+  .btn-outline{background:transparent; border:1px solid var(--navy); color:var(--navy);}
+  .btn-outline:hover{background:rgba(27,36,50,0.06);}
+  .btn-block{width:100%; margin-top:22px;}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .hint{font-size:12.5px; color:var(--ink-soft); margin-top:4px;}
+  .error-box{
+    background:var(--red-light); color:var(--red);
+    border:1px solid #E3B6B2; border-radius:6px;
+    padding:10px 12px; font-size:13px; margin-top:14px;
+  }
+
+  /* ID Badge */
+  .badge-wrap{display:flex; justify-content:center; padding:12px 0 4px;}
+  .badge{
+    width:280px;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.15);
+    overflow:hidden;
+    border:1px solid #DAD5C6;
+  }
+  .badge .punch{
+    width:36px; height:10px; background:var(--paper-dark);
+    border-radius:6px; margin:8px auto 0;
+  }
+  .badge .badge-head{
+    background:var(--navy);
+    color:var(--paper);
+    text-align:center;
+    padding:10px 10px 8px;
+    margin-top:6px;
+  }
+  .badge .badge-head .org{
+    font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--brass-light);
+  }
+  .badge .badge-head .role{
+    font-size:13px; font-weight:600; margin-top:2px;
+  }
+  .badge .qr-slot{
+    display:flex; justify-content:center; padding:16px 0 6px;
+  }
+  .badge .qr-slot > div{background:#fff;}
+  .badge .badge-body{
+    padding:2px 18px 18px;
+    text-align:center;
+    border-top:1px dashed #D8D2C0;
+    margin-top:6px;
+  }
+  .badge .name{font-size:16px; font-weight:700; margin:10px 0 2px;}
+  .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
+  .badge .serial{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:1px;
+    background:var(--paper-dark);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:4px;
+    margin-top:10px;
+    color:var(--navy);
+  }
+
+  .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft);}
+  .empty-state .btn{margin-top:14px;}
+
+  /* Verify */
+  .lookup-row{display:flex; gap:8px;}
+  .lookup-row input{flex:1;}
+  #camera-wrap{display:none; margin-top:16px; text-align:center;}
+  #camera-wrap video{width:100%; max-width:320px; border-radius:8px; border:1px solid #CFCABA;}
+  .result-card{
+    margin-top:18px;
+    background:var(--teal-light);
+    border:1px solid #BBD6CE;
+    border-radius:8px;
+    padding:16px;
+  }
+  .result-card h3{margin:0 0 8px; font-size:15px; color:var(--teal);}
+  .result-card .row{display:flex; justify-content:space-between; font-size:13.5px; padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.05);}
+  .result-card .row:last-child{border-bottom:none;}
+  .result-card .row .k{color:var(--ink-soft);}
+  .not-found{
+    margin-top:18px; background:var(--red-light); border:1px solid #E3B6B2;
+    border-radius:8px; padding:16px; font-size:13.5px; color:var(--red);
+  }
+
+  /* Admin */
+  .admin-toolbar{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  table.admin-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.admin-table th{
+    text-align:left; background:var(--navy); color:var(--paper);
+    padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;
+    position:sticky; top:0;
+  }
+  table.admin-table td{padding:8px 8px; border-bottom:1px solid #E5E1D4; vertical-align:top;}
+  table.admin-table tr:nth-child(even) td{background:#FBFAF5;}
+  .table-scroll{overflow-x:auto; max-height:420px; overflow-y:auto; border:1px solid #E5E1D4; border-radius:6px;}
+  .count-tag{font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+
+  /* Login views */
+  .login-box{max-width:280px; margin:30px auto 0; text-align:center;}
+  .login-box .lock-icon{font-size:26px; margin-bottom:6px;}
+  .login-box h3{margin:6px 0 4px; font-size:15px; color:var(--navy);}
+  .login-box p{font-size:13px; color:var(--ink-soft); margin:0 0 16px;}
+  .login-box input{text-align:center; letter-spacing:2px; margin-bottom:10px;}
+  .login-box .gate-error{color:var(--red); font-size:12.5px; margin-top:8px; display:none;}
+
+  /* Footer with staff/admin entry points */
+  footer.bottom-bar{
+    border-top:1px solid #E5E1D4;
+    padding:14px 24px;
+    text-align:center;
+    background:var(--paper-dark);
+  }
+  footer.bottom-bar a{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    text-decoration:underline;
+    cursor:pointer;
+    margin:0 10px;
+  }
+  .top-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .link-btn{
+    background:none; border:none; color:var(--navy);
+    font-size:13px; text-decoration:underline; cursor:pointer; padding:0;
+  }
+
+  header.top{
+    background-size:cover;
+    background-position:center;
+    transition:background-image 0.2s ease;
+  }
+
+  .staff-subnav{
+    display:flex; gap:16px; align-items:center; margin-bottom:18px;
+    border-bottom:1px solid #E5E1D4; padding-bottom:12px;
+  }
+  .staff-subnav button.tab-link{
+    background:none; border:none; font-size:13px; font-weight:600;
+    color:var(--ink-soft); cursor:pointer; padding:4px 0;
+    border-bottom:2px solid transparent;
+  }
+  .staff-subnav button.tab-link.active{
+    color:var(--navy); border-bottom:2px solid var(--brass);
+  }
+  .staff-subnav .spacer{flex:1;}
+
+  .color-row{display:flex; gap:16px;}
+  .color-row > div{flex:1;}
+  input[type=color]{
+    width:100%; height:40px; padding:2px; border:1px solid #CFCABA;
+    border-radius:6px; background:#fff; cursor:pointer;
+  }
+  .photo-preview{
+    margin-top:10px; width:100%; height:120px; border-radius:8px;
+    background-size:cover; background-position:center; background-color:var(--paper-dark);
+    border:1px solid #CFCABA; display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:12.5px;
+  }
+  .save-confirm{
+    margin-top:14px; background:var(--teal-light); color:var(--teal);
+    border:1px solid #BBD6CE; border-radius:6px; padding:10px 12px;
+    font-size:13px; display:none;
+  }
+
+  .school-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#fff; border:1px solid #CFCABA; border-radius:20px;
+    padding:5px 6px 5px 12px; font-size:12.5px; margin:0 6px 6px 0;
+  }
+  .school-chip button{
+    background:none; border:none; color:var(--red); cursor:pointer;
+    font-size:14px; line-height:1; padding:2px 6px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top" id="site-header">
+    <h1 id="site-headline">Seminar Registration</h1>
+    <p id="site-subheadline">Register for the seminar and get your ID</p>
+  </header>
+
+  <main>
+
+    <!-- REGISTER -->
+    <section id="view-register" class="view active">
+      <label for="f-name">Full name</label>
+      <input type="text" id="f-name" placeholder="Juan Dela Cruz">
+
+      <label for="f-address">Address</label>
+      <input type="text" id="f-address" placeholder="123 Rizal St., Makati City">
+
+      <label for="f-life-guide">Life guide</label>
+      <input type="text" id="f-life-guide" placeholder="Name of your life guide">
+
+      <label for="f-network-leader">Network leader</label>
+      <select id="f-network-leader">
+        <option value="">Select network leader</option>
+      </select>
+      <div id="network-leader-other-wrap" style="display:none;">
+        <input type="text" id="f-network-leader-other" placeholder="Enter your network leader's name" style="margin-top:8px;">
+      </div>
+
+      <label for="f-school">School</label>
+      <select id="f-school">
+        <option value="">Select school</option>
+      </select>
+      <div id="school-other-wrap" style="display:none;">
+        <input type="text" id="f-school-other" placeholder="Enter your school's name" style="margin-top:8px;">
+      </div>
+
+      <label for="f-status">Status</label>
+      <select id="f-status">
+        <option value="">Select status</option>
+        <option>Teacher</option>
+        <option>Student</option>
+        <option>Professional / Other</option>
+      </select>
+
+      <div id="grade-level-wrap" style="display:none;">
+        <label for="f-grade-level">Grade level</label>
+        <select id="f-grade-level">
+          <option value="">Select grade level</option>
+          <option>Elementary</option>
+          <option>Junior High School</option>
+          <option>Senior High School</option>
+          <option>College</option>
+        </select>
+
+        <div id="specific-level-wrap" style="display:none;">
+          <label for="f-specific-level" id="specific-level-label">Specify</label>
+          <select id="f-specific-level">
+          </select>
+        </div>
+      </div>
+
+      <div id="profession-wrap" style="display:none;">
+        <label for="f-profession">Specify profession</label>
+        <input type="text" id="f-profession" placeholder="e.g. Nurse, Engineer, Accountant">
+      </div>
+
+      <label for="f-phone">Phone number</label>
+      <input type="tel" id="f-phone" placeholder="09XX XXX XXXX">
+
+      <label style="display:flex; align-items:flex-start; gap:8px; text-transform:none; font-weight:400; font-size:13.5px; color:var(--ink); margin-top:20px;">
+        <input type="checkbox" id="f-paid" style="width:auto; margin-top:2px;">
+        <span>I have already paid the seminar registration fee.</span>
+      </label>
+
+      <button class="btn btn-primary btn-block" id="btn-register">Generate my ID</button>
+      <div id="register-error"></div>
+      <p class="hint">Submitting saves your details and generates a personal QR code and ID number.</p>
+    </section>
+
+    <!-- MY ID -->
+    <section id="view-myid" class="view">
+      <div id="myid-content"></div>
+    </section>
+
+    <!-- STAFF LOGIN -->
+    <section id="view-staff-login" class="view">
+      <div class="login-box">
+        <div class="lock-icon">&#128274;</div>
+        <h3>Staff log in</h3>
+        <p>Enter the staff code to verify guest IDs.</p>
+        <input type="password" id="staff-code" placeholder="Staff code">
+        <br>
+        <button class="btn btn-primary" onclick="tryLogin('staff')">Log in</button>
+        <div class="gate-error" id="staff-login-error">Incorrect code.</div>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+      </div>
+    </section>
+
+    <!-- VERIFY (staff) -->
+    <section id="view-verify" class="view">
+      <div class="staff-subnav">
+        <button class="tab-link active" id="subnav-verify" onclick="showView('verify')">Verify guests</button>
+        <button class="tab-link" id="subnav-customize-1" onclick="showView('customize')">Edit page design</button>
+        <div class="spacer"></div>
+        <button class="link-btn" onclick="logout('staff')">Log out</button>
+      </div>
+      <label for="v-id">Enter ID number</label>
+      <div class="lookup-row">
+        <input type="text" id="v-id" placeholder="e.g. ID-A1B2C3">
+        <button class="btn btn-primary" id="btn-lookup">Look up</button>
+      </div>
+      <button class="btn btn-outline" id="btn-scan" style="margin-top:12px;">Scan QR with camera</button>
+      <div id="camera-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p class="hint">Point the camera at a guest's QR code.</p>
+        <button class="btn btn-outline" id="btn-stop-scan" style="margin-top:8px;">Stop camera</button>
+      </div>
+      <div id="verify-result"></div>
+    </section>
+
+    <!-- CUSTOMIZE (staff) -->
+    <section id="view-customize" class="view">
+      <div class="staff-subnav">
+        <button class="tab-link" id="subnav-verify-2" onclick="showView('verify')">Verify guests</button>
+        <button class="tab-link active" id="subnav-customize-2" onclick="showView('customize')">Edit page design</button>
+        <div class="spacer"></div>
+        <button class="link-btn" onclick="logout('staff')">Log out</button>
+      </div>
+
+      <label for="c-headline">Headline</label>
+      <input type="text" id="c-headline" placeholder="Seminar Registration">
+
+      <label for="c-subheadline">Subheadline</label>
+      <input type="text" id="c-subheadline" placeholder="Register for the seminar and get your ID">
+
+      <label>Header photo</label>
+      <input type="file" id="c-photo" accept="image/*">
+      <div class="photo-preview" id="c-photo-preview">No photo set</div>
+      <p class="hint"><button class="link-btn" id="c-photo-remove">Remove photo</button></p>
+
+      <label>Colors</label>
+      <div class="color-row">
+        <div>
+          <span class="hint">Header / primary</span>
+          <input type="color" id="c-color-primary" value="#1B2432">
+        </div>
+        <div>
+          <span class="hint">Accent</span>
+          <input type="color" id="c-color-accent" value="#B8912B">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-save-design">Save changes</button>
+      <div class="save-confirm" id="save-confirm">Saved. Guests will see the updated page.</div>
+    </section>
+
+    <!-- ADMIN LOGIN -->
+    <section id="view-admin-login" class="view">
+      <div class="login-box">
+        <div class="lock-icon">&#128274;</div>
+        <h3>Admin log in</h3>
+        <p>Enter the admin code to view all guests.</p>
+        <input type="password" id="admin-code" placeholder="Admin code">
+        <br>
+        <button class="btn btn-primary" onclick="tryLogin('admin')">Log in</button>
+        <div class="gate-error" id="admin-login-error">Incorrect code.</div>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="view">
+      <div class="top-actions">
+        <strong style="font-size:14px;">Admin — all guests</strong>
+        <button class="link-btn" onclick="logout('admin')">Log out</button>
+      </div>
+
+      <div style="background:var(--paper-dark); border-radius:8px; padding:14px 16px; margin-bottom:20px;">
+        <strong style="font-size:13.5px;">Manage schools</strong>
+        <p class="hint" style="margin-top:2px;">These are the schools attendees can choose from on the registration form.</p>
+        <div class="lookup-row" style="margin-top:10px;">
+          <input type="text" id="admin-school-input" placeholder="Add a school name">
+          <button class="btn btn-outline" id="btn-add-school">Add</button>
+        </div>
+        <div id="admin-school-list" style="margin-top:10px;"></div>
+      </div>
+
+      <div style="background:var(--paper-dark); border-radius:8px; padding:14px 16px; margin-bottom:20px;">
+        <strong style="font-size:13.5px;">Manage network leaders</strong>
+        <p class="hint" style="margin-top:2px;">These are the network leaders attendees can choose from on the registration form.</p>
+        <div class="lookup-row" style="margin-top:10px;">
+          <input type="text" id="admin-network-leader-input" placeholder="Add a network leader's name">
+          <button class="btn btn-outline" id="btn-add-network-leader">Add</button>
+        </div>
+        <div id="admin-network-leader-list" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="admin-toolbar">
+        <button class="btn btn-primary" id="btn-load-all">Load all guests</button>
+        <button class="btn btn-outline" id="btn-export">Export to CSV (Excel)</button>
+      </div>
+      <div id="admin-content"></div>
+    </section>
+
+  </main>
+
+  <footer class="bottom-bar" id="bottom-bar">
+    <a onclick="showView('staff-login')">Staff log in</a>
+    <a onclick="showView('admin-login')">Admin log in</a>
+  </footer>
+</div>
+
+<script>
+let scanning = false;
+let scanStream = null;
+
+// Change these two codes to whatever you want staff and admins to use.
+const STAFF_CODE = "STAFF2026";
+const ADMIN_CODE = "ADMIN2026";
+
+const DEFAULT_SITE_CONFIG = {
+  headline: "Seminar Registration",
+  subheadline: "Register for the seminar and get your ID",
+  primaryColor: "#1B2432",
+  accentColor: "#B8912B",
+  photo: null
+};
+let siteConfig = { ...DEFAULT_SITE_CONFIG };
+let photoDraft = null;
+
+function applySiteConfig(cfg){
+  document.getElementById('site-headline').textContent = cfg.headline;
+  document.getElementById('site-subheadline').textContent = cfg.subheadline;
+  document.documentElement.style.setProperty('--navy', cfg.primaryColor);
+  document.documentElement.style.setProperty('--navy-light', cfg.primaryColor);
+  document.documentElement.style.setProperty('--brass', cfg.accentColor);
+  const header = document.getElementById('site-header');
+  if(cfg.photo){
+    header.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${cfg.photo})`;
+  }else{
+    header.style.backgroundImage = 'none';
+  }
+}
+
+async function loadSiteConfig(){
+  try{
+    const res = await window.storage.get('site-config', true);
+    if(res) return { ...DEFAULT_SITE_CONFIG, ...JSON.parse(res.value) };
+  }catch(e){}
+  return { ...DEFAULT_SITE_CONFIG };
+}
+
+function populateCustomizeForm(){
+  document.getElementById('c-headline').value = siteConfig.headline;
+  document.getElementById('c-subheadline').value = siteConfig.subheadline;
+  document.getElementById('c-color-primary').value = siteConfig.primaryColor;
+  document.getElementById('c-color-accent').value = siteConfig.accentColor;
+  photoDraft = siteConfig.photo;
+  updatePhotoPreview();
+  document.getElementById('save-confirm').style.display = 'none';
+}
+
+function updatePhotoPreview(){
+  const preview = document.getElementById('c-photo-preview');
+  if(photoDraft){
+    preview.style.backgroundImage = `url(${photoDraft})`;
+    preview.textContent = '';
+  }else{
+    preview.style.backgroundImage = 'none';
+    preview.textContent = 'No photo set';
+  }
+}
+
+document.getElementById('c-photo').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    if(reader.result.length > 4500000){
+      alert('That photo is too large. Please choose a smaller image.');
+      return;
+    }
+    photoDraft = reader.result;
+    updatePhotoPreview();
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('c-photo-remove').addEventListener('click', ()=>{
+  photoDraft = null;
+  document.getElementById('c-photo').value = '';
+  updatePhotoPreview();
+});
+
+document.getElementById('btn-save-design').addEventListener('click', async ()=>{
+  const newConfig = {
+    headline: document.getElementById('c-headline').value.trim() || DEFAULT_SITE_CONFIG.headline,
+    subheadline: document.getElementById('c-subheadline').value.trim() || DEFAULT_SITE_CONFIG.subheadline,
+    primaryColor: document.getElementById('c-color-primary').value,
+    accentColor: document.getElementById('c-color-accent').value,
+    photo: photoDraft
+  };
+  siteConfig = newConfig;
+  applySiteConfig(siteConfig);
+  try{
+    await window.storage.set('site-config', JSON.stringify(siteConfig), true);
+    const confirmEl = document.getElementById('save-confirm');
+    confirmEl.style.display = 'block';
+    setTimeout(()=>{ confirmEl.style.display = 'none'; }, 3000);
+  }catch(e){
+    alert('Could not save your changes. Please try again.');
+  }
+});
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.getElementById('bottom-bar').style.display =
+    (name==='register' || name==='myid') ? 'block' : 'none';
+  if(name==='myid') renderMyId();
+  if(name==='customize') populateCustomizeForm();
+  if(name==='admin'){ renderAdminSchoolList(); renderAdminNetworkLeaderList(); }
+  if(name!=='verify') stopScan();
+}
+
+function tryLogin(which){
+  if(which==='staff'){
+    const val = document.getElementById('staff-code').value.trim();
+    if(val === STAFF_CODE){
+      document.getElementById('staff-code').value = '';
+      showView('verify');
+    }else{
+      document.getElementById('staff-login-error').style.display = 'block';
+    }
+  }else{
+    const val = document.getElementById('admin-code').value.trim();
+    if(val === ADMIN_CODE){
+      document.getElementById('admin-code').value = '';
+      showView('admin');
+    }else{
+      document.getElementById('admin-login-error').style.display = 'block';
+    }
+  }
+}
+
+function logout(which){
+  if(which==='staff') document.getElementById('staff-login-error').style.display='none';
+  if(which==='admin') document.getElementById('admin-login-error').style.display='none';
+  showView('register');
+}
+
+function genId(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return 'ID-' + s;
+}
+
+document.getElementById('f-status').addEventListener('change', (e)=>{
+  const status = e.target.value;
+  document.getElementById('profession-wrap').style.display =
+    (status === 'Professional / Other') ? 'block' : 'none';
+  document.getElementById('grade-level-wrap').style.display =
+    (status === 'Student' || status === 'Teacher') ? 'block' : 'none';
+});
+
+const SUB_LEVEL_OPTIONS = {
+  'Junior High School': { label: 'Which grade', options: ['Grade 7','Grade 8','Grade 9','Grade 10'] },
+  'Senior High School': { label: 'Which grade', options: ['Grade 11','Grade 12'] },
+  'College': { label: 'Which year', options: ['1st Year','2nd Year','3rd Year','4th Year'] }
+};
+
+document.getElementById('f-grade-level').addEventListener('change', (e)=>{
+  const val = e.target.value;
+  const wrap = document.getElementById('specific-level-wrap');
+  const select = document.getElementById('f-specific-level');
+  const label = document.getElementById('specific-level-label');
+  const config = SUB_LEVEL_OPTIONS[val];
+  if(config){
+    label.textContent = config.label;
+    select.innerHTML = '<option value="">Select</option>' +
+      config.options.map(o => `<option>${o}</option>`).join('');
+    wrap.style.display = 'block';
+  }else{
+    select.innerHTML = '';
+    wrap.style.display = 'none';
+  }
+});
+
+document.getElementById('f-school').addEventListener('change', (e)=>{
+  document.getElementById('school-other-wrap').style.display =
+    (e.target.value === '__other__') ? 'block' : 'none';
+});
+
+document.getElementById('f-network-leader').addEventListener('change', (e)=>{
+  document.getElementById('network-leader-other-wrap').style.display =
+    (e.target.value === '__other__') ? 'block' : 'none';
+});
+
+let schoolList = [];
+let networkLeaderList = [];
+
+async function loadSchoolList(){
+  try{
+    const res = await window.storage.get('school-list', true);
+    if(res) return JSON.parse(res.value);
+  }catch(e){}
+  return [];
+}
+
+function populateSchoolSelect(){
+  const select = document.getElementById('f-school');
+  select.innerHTML = '<option value="">Select school</option>';
+  schoolList.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  const otherOpt = document.createElement('option');
+  otherOpt.value = '__other__';
+  otherOpt.textContent = 'Other (not listed)';
+  select.appendChild(otherOpt);
+}
+
+function renderAdminSchoolList(){
+  const wrap = document.getElementById('admin-school-list');
+  if(schoolList.length === 0){
+    wrap.innerHTML = '<p class="hint">No schools added yet.</p>';
+    return;
+  }
+  wrap.innerHTML = schoolList.map((name, i) => `
+    <span class="school-chip">${escapeHtml(name)}<button onclick="removeSchool(${i})" aria-label="Remove ${escapeHtml(name)}">&times;</button></span>
+  `).join('');
+}
+
+async function saveSchoolList(){
+  try{
+    await window.storage.set('school-list', JSON.stringify(schoolList), true);
+  }catch(e){
+    alert('Could not save the school list. Please try again.');
+  }
+  populateSchoolSelect();
+  renderAdminSchoolList();
+}
+
+document.getElementById('btn-add-school').addEventListener('click', async ()=>{
+  const input = document.getElementById('admin-school-input');
+  const name = input.value.trim();
+  if(!name) return;
+  if(schoolList.some(s => s.toLowerCase() === name.toLowerCase())){
+    input.value = '';
+    return;
+  }
+  schoolList.push(name);
+  input.value = '';
+  await saveSchoolList();
+});
+
+async function removeSchool(index){
+  schoolList.splice(index, 1);
+  await saveSchoolList();
+}
+
+async function loadNetworkLeaderList(){
+  try{
+    const res = await window.storage.get('network-leader-list', true);
+    if(res) return JSON.parse(res.value);
+  }catch(e){}
+  return [];
+}
+
+function populateNetworkLeaderSelect(){
+  const select = document.getElementById('f-network-leader');
+  select.innerHTML = '<option value="">Select network leader</option>';
+  networkLeaderList.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  const otherOpt = document.createElement('option');
+  otherOpt.value = '__other__';
+  otherOpt.textContent = 'Other (not listed)';
+  select.appendChild(otherOpt);
+}
+
+function renderAdminNetworkLeaderList(){
+  const wrap = document.getElementById('admin-network-leader-list');
+  if(networkLeaderList.length === 0){
+    wrap.innerHTML = '<p class="hint">No network leaders added yet.</p>';
+    return;
+  }
+  wrap.innerHTML = networkLeaderList.map((name, i) => `
+    <span class="school-chip">${escapeHtml(name)}<button onclick="removeNetworkLeader(${i})" aria-label="Remove ${escapeHtml(name)}">&times;</button></span>
+  `).join('');
+}
+
+async function saveNetworkLeaderList(){
+  try{
+    await window.storage.set('network-leader-list', JSON.stringify(networkLeaderList), true);
+  }catch(e){
+    alert('Could not save the network leader list. Please try again.');
+  }
+  populateNetworkLeaderSelect();
+  renderAdminNetworkLeaderList();
+}
+
+document.getElementById('btn-add-network-leader').addEventListener('click', async ()=>{
+  const input = document.getElementById('admin-network-leader-input');
+  const name = input.value.trim();
+  if(!name) return;
+  if(networkLeaderList.some(s => s.toLowerCase() === name.toLowerCase())){
+    input.value = '';
+    return;
+  }
+  networkLeaderList.push(name);
+  input.value = '';
+  await saveNetworkLeaderList();
+});
+
+async function removeNetworkLeader(index){
+  networkLeaderList.splice(index, 1);
+  await saveNetworkLeaderList();
+}
+
+async function registerUser(){
+  const name = document.getElementById('f-name').value.trim();
+  const address = document.getElementById('f-address').value.trim();
+  const lifeGuide = document.getElementById('f-life-guide').value.trim();
+  const networkLeaderChoice = document.getElementById('f-network-leader').value;
+  const networkLeaderOther = document.getElementById('f-network-leader-other').value.trim();
+  const schoolChoice = document.getElementById('f-school').value;
+  const schoolOther = document.getElementById('f-school-other').value.trim();
+  const status = document.getElementById('f-status').value;
+  const gradeLevel = document.getElementById('f-grade-level').value;
+  const specificLevel = document.getElementById('f-specific-level').value;
+  const profession = document.getElementById('f-profession').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const paid = document.getElementById('f-paid').checked;
+  const errBox = document.getElementById('register-error');
+  errBox.innerHTML = '';
+
+  if(!name || !address || !status || !phone){
+    errBox.innerHTML = '<div class="error-box">Fill in every field before generating your ID.</div>';
+    return;
+  }
+  if(!lifeGuide){
+    errBox.innerHTML = '<div class="error-box">Please enter the name of your life guide.</div>';
+    return;
+  }
+  if(!networkLeaderChoice || (networkLeaderChoice === '__other__' && !networkLeaderOther)){
+    errBox.innerHTML = '<div class="error-box">Please select or enter your network leader.</div>';
+    return;
+  }
+  if(!schoolChoice || (schoolChoice === '__other__' && !schoolOther)){
+    errBox.innerHTML = '<div class="error-box">Please select or enter your school.</div>';
+    return;
+  }
+  if((status === 'Student' || status === 'Teacher') && !gradeLevel){
+    errBox.innerHTML = '<div class="error-box">Please select a grade level.</div>';
+    return;
+  }
+  if((status === 'Student' || status === 'Teacher') && SUB_LEVEL_OPTIONS[gradeLevel] && !specificLevel){
+    errBox.innerHTML = '<div class="error-box">Please complete the grade level selection.</div>';
+    return;
+  }
+  if(status === 'Professional / Other' && !profession){
+    errBox.innerHTML = '<div class="error-box">Please specify your profession.</div>';
+    return;
+  }
+  if(!paid){
+    errBox.innerHTML = '<div class="error-box">Please confirm that you have paid the registration fee before generating an ID.</div>';
+    return;
+  }
+
+  const id = genId();
+  const levelCombined = specificLevel ? `${gradeLevel} - ${specificLevel}` : gradeLevel;
+  const record = {
+    id, name, address, status,
+    lifeGuide,
+    networkLeader: networkLeaderChoice === '__other__' ? networkLeaderOther : networkLeaderChoice,
+    school: schoolChoice === '__other__' ? schoolOther : schoolChoice,
+    level: (status === 'Student' || status === 'Teacher') ? levelCombined : '',
+    profession: status === 'Professional / Other' ? profession : '',
+    phone, paid,
+    registeredAt: new Date().toISOString()
+  };
+
+  try{
+    await window.storage.set('registrant:'+id, JSON.stringify(record), true);
+    await window.storage.set('me', JSON.stringify(record), false);
+  }catch(e){
+    errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
+    return;
+  }
+
+  document.getElementById('f-name').value='';
+  document.getElementById('f-address').value='';
+  document.getElementById('f-life-guide').value='';
+  document.getElementById('f-network-leader').value='';
+  document.getElementById('f-network-leader-other').value='';
+  document.getElementById('network-leader-other-wrap').style.display='none';
+  document.getElementById('f-school').value='';
+  document.getElementById('f-school-other').value='';
+  document.getElementById('school-other-wrap').style.display='none';
+  document.getElementById('f-status').value='';
+  document.getElementById('f-grade-level').value='';
+  document.getElementById('grade-level-wrap').style.display='none';
+  document.getElementById('f-profession').value='';
+  document.getElementById('profession-wrap').style.display='none';
+  document.getElementById('f-phone').value='';
+  document.getElementById('f-paid').checked=false;
+
+  showView('myid');
+}
+document.getElementById('btn-register').addEventListener('click', registerUser);
+
+async function renderMyId(){
+  const wrap = document.getElementById('myid-content');
+  let record = null;
+  try{
+    const res = await window.storage.get('me', false);
+    if(res) record = JSON.parse(res.value);
+  }catch(e){}
+
+  if(!record){
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <p>You haven't registered yet.</p>
+        <button class="btn btn-primary" onclick="showView('register')">Go to Register</button>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="badge-wrap">
+      <div class="badge">
+        <div class="punch"></div>
+        <div class="badge-head">
+          <div class="org">Seminar ID</div>
+          <div class="role">${escapeHtml(record.status)}</div>
+        </div>
+        <div class="qr-slot"><div id="qr-canvas"></div></div>
+        <div class="badge-body">
+          <div class="name">${escapeHtml(record.name)}</div>
+          <div class="meta-line">${escapeHtml(record.school)}</div>
+          ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
+          ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
+          <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
+          <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
+          <div class="meta-line">${escapeHtml(record.address)}</div>
+          <div class="meta-line">${escapeHtml(record.phone)}</div>
+          <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
+          <div class="serial">${record.id}</div>
+        </div>
+      </div>
+    </div>
+    <p class="hint" style="text-align:center;">Show this QR code at the seminar to be verified.</p>
+    <p style="text-align:center; margin-top:18px;">
+      <button class="link-btn" onclick="showView('register')">Register another attendee on this device</button>
+    </p>
+  `;
+
+  const qrHolder = document.getElementById('qr-canvas');
+  qrHolder.innerHTML = '';
+  new QRCode(qrHolder, {
+    text: record.id,
+    width: 150,
+    height: 150,
+    colorDark: '#1B2432',
+    colorLight: '#ffffff'
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.innerText = str;
+  return d.innerHTML;
+}
+
+async function lookupId(idRaw){
+  const resultBox = document.getElementById('verify-result');
+  const id = idRaw.trim().toUpperCase();
+  if(!id){ resultBox.innerHTML=''; return; }
+  resultBox.innerHTML = '<p class="hint">Looking up…</p>';
+  try{
+    const res = await window.storage.get('registrant:'+id, true);
+    if(!res){
+      resultBox.innerHTML = '<div class="not-found">No guest found for that ID.</div>';
+      return;
+    }
+    const r = JSON.parse(res.value);
+    resultBox.innerHTML = `
+      <div class="result-card">
+        <h3>Verified attendee</h3>
+        <div class="row"><span class="k">Name</span><span>${escapeHtml(r.name)}</span></div>
+        <div class="row"><span class="k">ID number</span><span>${r.id}</span></div>
+        <div class="row"><span class="k">Status</span><span>${escapeHtml(r.status)}</span></div>
+        <div class="row"><span class="k">School</span><span>${escapeHtml(r.school)}</span></div>
+        ${r.profession ? `<div class="row"><span class="k">Profession</span><span>${escapeHtml(r.profession)}</span></div>` : ''}
+        ${r.level ? `<div class="row"><span class="k">Grade level</span><span>${escapeHtml(r.level)}</span></div>` : ''}
+        <div class="row"><span class="k">Life guide</span><span>${escapeHtml(r.lifeGuide || '')}</span></div>
+        <div class="row"><span class="k">Network leader</span><span>${escapeHtml(r.networkLeader || '')}</span></div>
+        <div class="row"><span class="k">Address</span><span>${escapeHtml(r.address)}</span></div>
+        <div class="row"><span class="k">Phone</span><span>${escapeHtml(r.phone)}</span></div>
+        <div class="row"><span class="k">Paid</span><span>${r.paid ? 'Yes' : 'Not yet'}</span></div>
+        <div class="row"><span class="k">Registered</span><span>${new Date(r.registeredAt).toLocaleString()}</span></div>
+      </div>`;
+  }catch(e){
+    resultBox.innerHTML = '<div class="not-found">No guest found for that ID.</div>';
+  }
+}
+document.getElementById('btn-lookup').addEventListener('click', ()=>{
+  lookupId(document.getElementById('v-id').value);
+});
+document.getElementById('v-id').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') lookupId(e.target.value);
+});
+
+document.getElementById('btn-scan').addEventListener('click', startScan);
+document.getElementById('btn-stop-scan').addEventListener('click', stopScan);
+
+async function startScan(){
+  const wrap = document.getElementById('camera-wrap');
+  const video = document.getElementById('video');
+  try{
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = scanStream;
+    wrap.style.display = 'block';
+    scanning = true;
+    requestAnimationFrame(scanLoop);
+  }catch(e){
+    document.getElementById('verify-result').innerHTML =
+      '<div class="not-found">Could not access the camera. You can type the ID number instead.</div>';
+  }
+}
+
+function stopScan(){
+  scanning = false;
+  if(scanStream){
+    scanStream.getTracks().forEach(t=>t.stop());
+    scanStream = null;
+  }
+  document.getElementById('camera-wrap').style.display = 'none';
+}
+
+function scanLoop(){
+  if(!scanning) return;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  if(video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if(code && code.data){
+      document.getElementById('v-id').value = code.data;
+      lookupId(code.data);
+      stopScan();
+      return;
+    }
+  }
+  requestAnimationFrame(scanLoop);
+}
+
+async function loadAllRegistrants(){
+  const content = document.getElementById('admin-content');
+  content.innerHTML = '<p class="hint">Loading…</p>';
+  try{
+    const listRes = await window.storage.list('registrant:', true);
+    const keys = (listRes && listRes.keys) ? listRes.keys : [];
+    if(keys.length === 0){
+      content.innerHTML = '<div class="empty-state"><p>No guests registered yet.</p></div>';
+      return;
+    }
+    const records = [];
+    for(const key of keys){
+      try{
+        const res = await window.storage.get(key, true);
+        if(res) records.push(JSON.parse(res.value));
+      }catch(e){}
+    }
+    records.sort((a,b)=> new Date(b.registeredAt) - new Date(a.registeredAt));
+    window.__allRecords = records;
+
+    let rows = records.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.lifeGuide || '')}</td>
+        <td>${escapeHtml(r.networkLeader || '')}</td>
+        <td>${escapeHtml(r.school || '')}</td>
+        <td>${escapeHtml(r.status)}</td>
+        <td>${escapeHtml(r.profession || '')}</td>
+        <td>${escapeHtml(r.level || '')}</td>
+        <td>${escapeHtml(r.address)}</td>
+        <td>${escapeHtml(r.phone)}</td>
+        <td>${r.paid ? 'Yes' : 'Not yet'}</td>
+        <td>${new Date(r.registeredAt).toLocaleString()}</td>
+      </tr>`).join('');
+
+    content.innerHTML = `
+      <div class="count-tag">${records.length} attendee${records.length===1?'':'s'} registered</div>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }catch(e){
+    content.innerHTML = '<div class="not-found">Could not load guest list.</div>';
+  }
+}
+document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
+
+function exportCsv(){
+  const records = window.__allRecords || [];
+  if(records.length === 0){
+    alert('Load the guest list first.');
+    return;
+  }
+  const headers = ['ID','Name','Life Guide','Network Leader','School','Status','Profession','Grade Level','Address','Phone','Paid','Registered At'];
+  const csvRows = [headers.join(',')];
+  records.forEach(r=>{
+    const row = [r.id, r.name, r.lifeGuide || '', r.networkLeader || '', r.school || '', r.status, r.profession || '', r.level || '', r.address, r.phone, r.paid ? 'Yes' : 'Not yet', r.registeredAt]
+      .map(v => '"' + String(v).replace(/"/g,'""') + '"');
+    csvRows.push(row.join(','));
+  });
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'seminar-attendees.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btn-export').addEventListener('click', exportCsv);
+
+// On load: apply any saved site design, load the school list, then show the right guest view.
+(async function init(){
+  siteConfig = await loadSiteConfig();
+  applySiteConfig(siteConfig);
+  schoolList = await loadSchoolList();
+  populateSchoolSelect();
+  networkLeaderList = await loadNetworkLeaderList();
+  populateNetworkLeaderSelect();
+  try{
+    const res = await window.storage.get('me', false);
+    if(res){
+      showView('myid');
+      return;
+    }
+  }catch(e){}
+  showView('register');
+})();
+</script>
+</body>
+</html>
