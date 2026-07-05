@@ -366,16 +366,10 @@
         <span>I have already paid the seminar registration fee.</span>
       </label>
 
-      <label for="f-photo">Photo (optional — you can add this later)</label>
-      <input type="file" id="f-photo" accept="image/*">
-      <div class="photo-preview" id="f-photo-preview">No photo set</div>
-
-      <label for="f-username">Choose a username</label>
-      <input type="text" id="f-username" placeholder="e.g. juandelacruz" autocapitalize="none">
-      <p class="hint">You'll use this to log back in later and edit your info or add a photo.</p>
-
-      <label for="f-password">Choose a password</label>
-      <input type="password" id="f-password" placeholder="At least 6 characters">
+      <label for="f-receipt">Proof of payment (receipt photo)</label>
+      <input type="file" id="f-receipt" accept="image/*">
+      <div class="photo-preview" id="f-receipt-preview">No receipt uploaded</div>
+      <p class="hint">Upload a photo of your payment receipt so staff can confirm it.</p>
 
       <button class="btn btn-primary btn-block" id="btn-register">Generate my ID</button>
       <div id="register-error"></div>
@@ -387,12 +381,12 @@
       <div class="login-box">
         <div class="lock-icon">&#128100;</div>
         <h3>Log in to my ID</h3>
-        <p>Enter the username and password you set when you registered.</p>
-        <input type="text" id="guest-username" placeholder="Username" style="letter-spacing:normal;">
+        <p>Enter your ID number and the access password to edit your info or add a photo.</p>
+        <input type="text" id="guest-id" placeholder="ID number (e.g. ID-A1B2C3)" style="letter-spacing:normal; text-transform:uppercase;">
         <input type="password" id="guest-password" placeholder="Password" style="letter-spacing:normal;">
         <br>
         <button class="btn btn-primary" onclick="tryGuestLogin()">Log in</button>
-        <div class="gate-error" id="guest-login-error">Incorrect username or password.</div>
+        <div class="gate-error" id="guest-login-error">ID number or password not recognized.</div>
         <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
       </div>
     </section>
@@ -588,7 +582,8 @@ function mapRowToRecord(row){
     paid: row.paid,
     registeredAt: row.registered_at,
     username: row.username,
-    photo: row.photo
+    photo: row.photo,
+    receiptPhoto: row.receipt_photo
   };
 }
 
@@ -598,6 +593,7 @@ let scanStream = null;
 // Change these two codes to whatever you want staff and admins to use.
 const STAFF_CODE = "STAFF2026";
 const ADMIN_CODE = "ADMIN2026";
+const GUEST_ACCESS_PASSWORD = "PROTEGE2026";
 
 const DEFAULT_SITE_CONFIG = {
   headline: "Seminar Registration",
@@ -745,20 +741,24 @@ let currentGuestRecord = null;
 let editPhotoDraft = null;
 
 async function tryGuestLogin(){
-  const username = document.getElementById('guest-username').value.trim();
+  const idInput = document.getElementById('guest-id').value.trim().toUpperCase();
   const password = document.getElementById('guest-password').value;
   const errEl = document.getElementById('guest-login-error');
   errEl.style.display = 'none';
-  if(!username || !password) return;
+  if(!idInput || !password) return;
+  if(password !== GUEST_ACCESS_PASSWORD){
+    errEl.style.display = 'block';
+    return;
+  }
   try{
-    const { data, error } = await sb.rpc('login_registrant', { p_username: username, p_password: password });
+    const { data, error } = await sb.from('registrants').select('*').eq('id', idInput).maybeSingle();
     if(error) throw error;
-    if(!data || data.length === 0){
+    if(!data){
       errEl.style.display = 'block';
       return;
     }
-    currentGuestRecord = mapRowToRecord(data[0]);
-    document.getElementById('guest-username').value = '';
+    currentGuestRecord = mapRowToRecord(data);
+    document.getElementById('guest-id').value = '';
     document.getElementById('guest-password').value = '';
     showView('edit-profile');
   }catch(e){
@@ -862,19 +862,19 @@ function firstNameOf(fullName){
   return (fullName || '').trim().split(/\s+/)[0] || '';
 }
 
-let regPhotoDraft = null;
-document.getElementById('f-photo').addEventListener('change', (e)=>{
+let regReceiptDraft = null;
+document.getElementById('f-receipt').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
   reader.onload = () => {
     if(reader.result.length > 4500000){
-      alert('That photo is too large. Please choose a smaller image.');
+      alert('That image is too large. Please choose a smaller photo.');
       return;
     }
-    regPhotoDraft = reader.result;
-    const preview = document.getElementById('f-photo-preview');
-    preview.style.backgroundImage = `url(${regPhotoDraft})`;
+    regReceiptDraft = reader.result;
+    const preview = document.getElementById('f-receipt-preview');
+    preview.style.backgroundImage = `url(${regReceiptDraft})`;
     preview.textContent = '';
   };
   reader.readAsDataURL(file);
@@ -1074,8 +1074,6 @@ async function registerUser(){
   const profession = document.getElementById('f-profession').value.trim();
   const phone = document.getElementById('f-phone').value.trim();
   const paid = document.getElementById('f-paid').checked;
-  const username = document.getElementById('f-username').value.trim();
-  const password = document.getElementById('f-password').value;
   const errBox = document.getElementById('register-error');
   errBox.innerHTML = '';
 
@@ -1111,12 +1109,8 @@ async function registerUser(){
     errBox.innerHTML = '<div class="error-box">Please confirm that you have paid the registration fee before generating an ID.</div>';
     return;
   }
-  if(!username || !password){
-    errBox.innerHTML = '<div class="error-box">Please choose a username and password so you can log back in later.</div>';
-    return;
-  }
-  if(password.length < 6){
-    errBox.innerHTML = '<div class="error-box">Password must be at least 6 characters.</div>';
+  if(!regReceiptDraft){
+    errBox.innerHTML = '<div class="error-box">Please upload a photo of your payment receipt.</div>';
     return;
   }
 
@@ -1131,8 +1125,8 @@ async function registerUser(){
     profession: status === 'Professional / Other' ? profession : '',
     phone, paid,
     registeredAt: new Date().toISOString(),
-    username,
-    photo: regPhotoDraft
+    receiptPhoto: regReceiptDraft,
+    photo: null
   };
 
   try{
@@ -1149,18 +1143,12 @@ async function registerUser(){
       phone: record.phone,
       paid: record.paid,
       registered_at: record.registeredAt,
-      username: record.username,
-      password: password,
-      photo: record.photo
+      receipt_photo: record.receiptPhoto
     });
     if(error) throw error;
     localStorage.setItem('me', JSON.stringify(record));
   }catch(e){
-    if(String(e.message||'').toLowerCase().includes('username')){
-      errBox.innerHTML = '<div class="error-box">That username is already taken. Please choose another.</div>';
-    }else{
-      errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
-    }
+    errBox.innerHTML = '<div class="error-box">Could not save your registration. Please try again.</div>';
     return;
   }
 
@@ -1180,12 +1168,10 @@ async function registerUser(){
   document.getElementById('profession-wrap').style.display='none';
   document.getElementById('f-phone').value='';
   document.getElementById('f-paid').checked=false;
-  document.getElementById('f-username').value='';
-  document.getElementById('f-password').value='';
-  document.getElementById('f-photo').value='';
-  regPhotoDraft = null;
-  document.getElementById('f-photo-preview').style.backgroundImage = 'none';
-  document.getElementById('f-photo-preview').textContent = 'No photo set';
+  document.getElementById('f-receipt').value='';
+  regReceiptDraft = null;
+  document.getElementById('f-receipt-preview').style.backgroundImage = 'none';
+  document.getElementById('f-receipt-preview').textContent = 'No receipt uploaded';
 
   showView('myid');
 }
@@ -1391,6 +1377,7 @@ async function loadAllRegistrants(){
         <td>${escapeHtml(r.phone)}</td>
         <td>${r.paid ? 'Yes' : 'Not yet'}</td>
         <td>${new Date(r.registeredAt).toLocaleString()}</td>
+        <td><button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button></td>
       </tr>`).join('');
 
     content.innerHTML = `
@@ -1399,7 +1386,7 @@ async function loadAllRegistrants(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1410,6 +1397,18 @@ async function loadAllRegistrants(){
   }
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
+
+async function deleteRegistrant(id){
+  const confirmed = window.confirm(`Delete registrant ${id}? This cannot be undone.`);
+  if(!confirmed) return;
+  try{
+    const { error } = await sb.from('registrants').delete().eq('id', id);
+    if(error) throw error;
+    await loadAllRegistrants();
+  }catch(e){
+    alert('Could not delete this registrant. Please try again.');
+  }
+}
 
 function exportCsv(){
   const records = window.__allRecords || [];
