@@ -112,54 +112,67 @@
   /* ID Badge */
   .badge-wrap{display:flex; justify-content:center; padding:12px 0 4px;}
   .badge{
-    width:280px;
+    width:100%;
+    max-width:480px;
     background:#fff;
-    border-radius:10px;
+    border-radius:12px;
     box-shadow:0 1px 3px rgba(0,0,0,0.15);
     overflow:hidden;
     border:1px solid #DAD5C6;
+    display:flex;
+    flex-direction:column;
   }
-  .badge .punch{
-    width:36px; height:10px; background:var(--paper-dark);
-    border-radius:6px; margin:8px auto 0;
+  @media (min-width:600px){
+    .badge{ flex-direction:row; }
   }
-  .badge .badge-head{
-    background:var(--navy);
-    color:var(--paper);
-    text-align:center;
-    padding:10px 10px 8px;
-    margin-top:6px;
-  }
-  .badge .badge-head .org{
-    font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--brass-light);
-  }
-  .badge .badge-head .role{
-    font-size:13px; font-weight:600; margin-top:2px;
-  }
-  .badge .qr-slot{
-    display:flex; justify-content:center; padding:16px 0 6px;
-  }
-  .badge .qr-slot > div{background:#fff;}
-  .badge .badge-body{
-    padding:2px 18px 18px;
-    text-align:center;
-    border-top:1px dashed #D8D2C0;
-    margin-top:6px;
-  }
-  .badge .name{font-size:16px; font-weight:700; margin:10px 0 2px;}
-  .badge .first-name{font-size:22px; font-weight:800; margin:10px 0 0; color:var(--navy);}
-  .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
-  .badge .photo-square{
-    width:88px; height:88px; border-radius:10px; object-fit:cover;
-    border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
-    margin:10px auto 0; display:block; background:var(--paper-dark);
-  }
-  .badge .photo-square-placeholder{
-    width:88px; height:88px; border-radius:10px;
-    border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25);
-    margin:10px auto 0; background:var(--paper-dark);
+  .badge .badge-photo-col{
+    flex:0 0 auto;
+    width:100%;
+    aspect-ratio:4/3;
+    background:var(--paper-dark);
+    background-size:cover;
+    background-position:center;
     display:flex; align-items:center; justify-content:center;
-    font-size:11px; color:var(--ink-soft); text-align:center;
+    color:var(--ink-soft); font-size:12px;
+  }
+  @media (min-width:600px){
+    .badge .badge-photo-col{ width:38%; aspect-ratio:auto; }
+  }
+  .badge .badge-info-col{
+    flex:1;
+    padding:16px 18px 18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .badge .badge-head-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding-bottom:8px; margin-bottom:10px; border-bottom:1px dashed #D8D2C0;
+  }
+  .badge .badge-head-row .org{
+    font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--brass); font-weight:700;
+  }
+  .badge .badge-head-row .role{
+    font-size:12px; font-weight:600; color:var(--ink-soft);
+  }
+  .badge .qr-info-row{
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .badge .qr-slot{ flex:0 0 auto; }
+  .badge .qr-slot > div{background:#fff;}
+  .badge .text-info{ flex:1; min-width:0; }
+  .badge .name{font-size:15px; font-weight:700; margin:0 0 2px;}
+  .badge .first-name{font-size:20px; font-weight:800; margin:0 0 2px; color:var(--navy);}
+  .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
+  .badge .serial{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:1px;
+    background:var(--paper-dark);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:4px;
+    margin-top:8px;
+    color:var(--navy);
   }
 
   /* Modal overlay (used for cropping and full ID view) */
@@ -171,7 +184,7 @@
   .modal-overlay.active{display:flex;}
   .modal-box{
     background:var(--paper); border-radius:12px; padding:20px;
-    max-width:360px; width:100%; max-height:90vh; overflow-y:auto;
+    max-width:420px; width:100%; max-height:90vh; overflow-y:auto;
     text-align:center;
   }
   .modal-box h3{margin:0 0 4px; font-size:15px; color:var(--navy);}
@@ -188,17 +201,21 @@
   .modal-actions{display:flex; gap:10px; margin-top:16px;}
   .modal-actions .btn{flex:1;}
   #view-id-modal .badge{margin:0 auto;}
-  .badge .serial{
-    font-family:var(--mono);
-    font-size:13px;
-    letter-spacing:1px;
-    background:var(--paper-dark);
-    display:inline-block;
-    padding:4px 10px;
-    border-radius:4px;
-    margin-top:10px;
-    color:var(--navy);
+
+  /* Two-column layout for the Edit Info screen */
+  .edit-grid{ display:grid; grid-template-columns: 1fr; gap:22px; }
+  @media (min-width:600px){
+    .edit-grid{ grid-template-columns: 220px 1fr; align-items:start; }
   }
+  .edit-photo-col label:first-of-type{ margin-top:0; }
+  .photo-preview-large{
+    margin-top:10px; width:100%; aspect-ratio:1/1; border-radius:10px;
+    background-size:cover; background-position:center; background-color:var(--paper-dark);
+    border:1px solid #CFCABA; display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:12.5px;
+  }
+  .edit-fields-col label:first-of-type{ margin-top:0; }
+
 
   .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft);}
   .empty-state .btn{margin-top:14px;}
@@ -425,29 +442,34 @@
         <button class="link-btn" onclick="logout('guest')">Log out</button>
       </div>
 
-      <label for="e-photo">Photo</label>
-      <input type="file" id="e-photo" accept="image/*">
-      <div class="photo-preview" id="e-photo-preview">No photo set</div>
+      <div class="edit-grid">
+        <div class="edit-photo-col">
+          <label for="e-photo">Photo</label>
+          <input type="file" id="e-photo" accept="image/*">
+          <div class="photo-preview-large" id="e-photo-preview">No photo set</div>
+        </div>
+        <div class="edit-fields-col">
+          <label for="e-name">Full name</label>
+          <input type="text" id="e-name">
 
-      <label for="e-name">Full name</label>
-      <input type="text" id="e-name">
+          <label for="e-address">Address</label>
+          <input type="text" id="e-address">
 
-      <label for="e-address">Address</label>
-      <input type="text" id="e-address">
+          <label for="e-life-guide">Life guide</label>
+          <input type="text" id="e-life-guide">
 
-      <label for="e-life-guide">Life guide</label>
-      <input type="text" id="e-life-guide">
+          <label for="e-network-leader">Network leader</label>
+          <input type="text" id="e-network-leader">
 
-      <label for="e-network-leader">Network leader</label>
-      <input type="text" id="e-network-leader">
+          <label for="e-school">School</label>
+          <input type="text" id="e-school">
 
-      <label for="e-school">School</label>
-      <input type="text" id="e-school">
+          <label for="e-phone">Phone number</label>
+          <input type="tel" id="e-phone">
+        </div>
+      </div>
 
-      <label for="e-phone">Phone number</label>
-      <input type="tel" id="e-phone">
-
-      <button class="btn btn-primary btn-block" id="btn-save-profile">Save changes</button>
+      <button class="btn btn-primary btn-block" id="btn-save-profile" style="margin-top:22px;">Save changes</button>
       <div id="edit-profile-error"></div>
       <div class="save-confirm" id="edit-profile-confirm">Saved.</div>
       <button class="btn btn-outline btn-block" id="btn-view-id-from-edit" style="margin-top:12px;">View my ID (with QR)</button>
@@ -1334,24 +1356,30 @@ let currentMyIdRecord = null;
 function buildBadgeHtml(record, qrElId){
   return `
     <div class="badge" id="id-badge-card">
-      <div class="punch"></div>
-      <div class="badge-head">
-        <div class="org">Seminar ID</div>
-        <div class="role">${escapeHtml(record.status)}</div>
+      <div class="badge-photo-col" style="${record.photo ? `background-image:url(${record.photo});` : ''}">
+        ${record.photo ? '' : 'No photo'}
       </div>
-      <div class="qr-slot"><div id="${qrElId}"></div></div>
-      <div class="badge-body">
-        <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
-        <div class="name">${escapeHtml(record.name)}</div>
-        <div class="meta-line">${escapeHtml(record.school)}</div>
-        ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
-        ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
-        <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
-        <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
-        <div class="meta-line">${escapeHtml(record.address)}</div>
-        <div class="meta-line">${escapeHtml(record.phone)}</div>
-        <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
-        <div class="serial">${record.id}</div>
+      <div class="badge-info-col">
+        <div class="badge-head-row">
+          <span class="org">Seminar ID</span>
+          <span class="role">${escapeHtml(record.status)}</span>
+        </div>
+        <div class="qr-info-row">
+          <div class="qr-slot"><div id="${qrElId}"></div></div>
+          <div class="text-info">
+            <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
+            <div class="name">${escapeHtml(record.name)}</div>
+            <div class="meta-line">${escapeHtml(record.school)}</div>
+            ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
+            ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
+            <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
+            <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
+            <div class="meta-line">${escapeHtml(record.address)}</div>
+            <div class="meta-line">${escapeHtml(record.phone)}</div>
+            <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
+            <div class="serial">${record.id}</div>
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -1361,8 +1389,8 @@ function renderQrInto(elId, text){
   holder.innerHTML = '';
   new QRCode(holder, {
     text: text,
-    width: 220,
-    height: 220,
+    width: 130,
+    height: 130,
     colorDark: '#000000',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H
