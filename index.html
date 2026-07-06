@@ -113,69 +113,43 @@
   .badge-wrap{display:flex; justify-content:center; padding:12px 0 4px;}
   .badge{
     width:100%;
-    max-width:480px;
+    max-width:320px;
     background:#fff;
     border-radius:12px;
     box-shadow:0 1px 3px rgba(0,0,0,0.15);
     overflow:hidden;
     border:1px solid #DAD5C6;
-    display:flex;
-    flex-direction:column;
-  }
-  @media (min-width:600px){
-    .badge{ flex-direction:row; }
-  }
-  .badge .badge-photo-col{
-    flex:0 0 auto;
-    width:100%;
-    aspect-ratio:4/3;
-    background:var(--paper-dark);
-    background-size:cover;
-    background-position:center;
-    display:flex; align-items:center; justify-content:center;
-    color:var(--ink-soft); font-size:12px;
-  }
-  @media (min-width:600px){
-    .badge .badge-photo-col{ width:38%; aspect-ratio:auto; }
-  }
-  .badge .badge-info-col{
-    flex:1;
-    padding:16px 18px 18px;
-    display:flex;
-    flex-direction:column;
+    padding:20px 22px 26px;
+    text-align:center;
   }
   .badge .badge-head-row{
     display:flex; justify-content:space-between; align-items:baseline;
-    padding-bottom:8px; margin-bottom:10px; border-bottom:1px dashed #D8D2C0;
+    padding-bottom:10px; margin-bottom:16px; border-bottom:1px dashed #D8D2C0;
   }
   .badge .badge-head-row .org{
-    font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--brass); font-weight:700;
+    font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink); font-weight:700;
   }
   .badge .badge-head-row .role{
-    font-size:12px; font-weight:600; color:var(--ink-soft);
+    font-size:13px; font-weight:600; color:var(--ink-soft);
   }
-  .badge .qr-info-row{
-    display:flex; flex-direction:column; gap:12px;
-  }
-  .badge .qr-slot{ align-self:center; }
+  .badge .first-name{font-size:32px; font-weight:800; color:var(--brass); margin:4px 0 2px; line-height:1.05; word-break:break-word;}
+  .badge .name{font-size:16px; font-weight:700; margin:0 0 14px; color:var(--ink);}
+  .badge .meta-line{font-size:13px; color:var(--ink-soft); margin:3px 0;}
+  .badge .qr-slot{ display:flex; justify-content:center; margin:18px 0 10px; }
   .badge .qr-slot > div{background:#fff;}
-  .badge .text-info{ width:100%; }
-  .badge .name{font-size:15px; font-weight:700; margin:0 0 2px;}
-  .badge .first-name{font-size:20px; font-weight:800; margin:0 0 2px; color:var(--navy);}
-  .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
   .badge .serial{
     font-family:var(--mono);
     font-size:13px;
     letter-spacing:1px;
     background:var(--paper-dark);
     display:inline-block;
-    padding:4px 10px;
-    border-radius:4px;
-    margin-top:8px;
+    padding:6px 14px;
+    border-radius:6px;
+    margin-top:6px;
     color:var(--navy);
   }
 
-  /* Modal overlay (used for cropping and full ID view) */
+  /* Modal overlay (used for the full ID view) */
   .modal-overlay{
     position:fixed; inset:0; background:rgba(20,20,18,0.72);
     display:none; align-items:center; justify-content:center;
@@ -184,37 +158,20 @@
   .modal-overlay.active{display:flex;}
   .modal-box{
     background:var(--paper); border-radius:12px; padding:20px;
-    max-width:420px; width:100%; max-height:90vh; overflow-y:auto;
+    max-width:360px; width:100%; max-height:90vh; overflow-y:auto;
     text-align:center;
   }
   .modal-box h3{margin:0 0 4px; font-size:15px; color:var(--navy);}
-  .crop-container{
-    width:260px; height:260px; margin:14px auto; border-radius:10px;
-    overflow:hidden; position:relative; background:#222; touch-action:none;
-  }
-  .crop-container img{
-    position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none;
-    cursor:grab;
-  }
-  .crop-controls{display:flex; align-items:center; gap:10px; margin-top:6px;}
-  .crop-controls input[type=range]{flex:1;}
   .modal-actions{display:flex; gap:10px; margin-top:16px;}
   .modal-actions .btn{flex:1;}
   #view-id-modal .badge{margin:0 auto;}
 
-  /* Two-column layout for the Edit Info screen */
-  .edit-grid{ display:grid; grid-template-columns: 1fr; gap:22px; }
-  @media (min-width:600px){
-    .edit-grid{ grid-template-columns: 220px 1fr; align-items:start; }
+  .upload-status{
+    margin-top:10px; padding:10px 12px; border-radius:6px;
+    background:var(--paper-dark); border:1px solid #CFCABA;
+    font-size:13px; color:var(--ink-soft);
   }
-  .edit-photo-col label:first-of-type{ margin-top:0; }
-  .photo-preview-large{
-    margin-top:10px; width:100%; aspect-ratio:1/1; border-radius:10px;
-    background-size:cover; background-position:center; background-color:var(--paper-dark);
-    border:1px solid #CFCABA; display:flex; align-items:center; justify-content:center;
-    color:var(--ink-soft); font-size:12.5px;
-  }
-  .edit-fields-col label:first-of-type{ margin-top:0; }
+  .upload-status.uploaded{ background:var(--teal-light); color:var(--teal); border-color:#BBD6CE; }
 
 
   .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft);}
@@ -412,7 +369,7 @@
 
       <label for="f-receipt">Proof of payment (receipt photo)</label>
       <input type="file" id="f-receipt" accept="image/*">
-      <div class="photo-preview" id="f-receipt-preview">No receipt uploaded</div>
+      <div class="upload-status" id="f-receipt-preview">No receipt uploaded yet</div>
       <p class="hint">Upload a photo of your payment receipt so staff can confirm it.</p>
 
       <button class="btn btn-primary btn-block" id="btn-register">Generate my ID</button>
@@ -442,32 +399,23 @@
         <button class="link-btn" onclick="logout('guest')">Log out</button>
       </div>
 
-      <div class="edit-grid">
-        <div class="edit-photo-col">
-          <label for="e-photo">Photo</label>
-          <input type="file" id="e-photo" accept="image/*">
-          <div class="photo-preview-large" id="e-photo-preview">No photo set</div>
-        </div>
-        <div class="edit-fields-col">
-          <label for="e-name">Full name</label>
-          <input type="text" id="e-name">
+      <label for="e-name">Full name</label>
+      <input type="text" id="e-name">
 
-          <label for="e-address">Address</label>
-          <input type="text" id="e-address">
+      <label for="e-address">Address</label>
+      <input type="text" id="e-address">
 
-          <label for="e-life-guide">Life guide</label>
-          <input type="text" id="e-life-guide">
+      <label for="e-life-guide">Life guide</label>
+      <input type="text" id="e-life-guide">
 
-          <label for="e-network-leader">Network leader</label>
-          <input type="text" id="e-network-leader">
+      <label for="e-network-leader">Network leader</label>
+      <input type="text" id="e-network-leader">
 
-          <label for="e-school">School</label>
-          <input type="text" id="e-school">
+      <label for="e-school">School</label>
+      <input type="text" id="e-school">
 
-          <label for="e-phone">Phone number</label>
-          <input type="tel" id="e-phone">
-        </div>
-      </div>
+      <label for="e-phone">Phone number</label>
+      <input type="tel" id="e-phone">
 
       <button class="btn btn-primary btn-block" id="btn-save-profile" style="margin-top:22px;">Save changes</button>
       <div id="edit-profile-error"></div>
@@ -622,25 +570,6 @@
   </div>
 </div>
 
-<!-- CROP PHOTO MODAL -->
-<div class="modal-overlay" id="crop-modal">
-  <div class="modal-box">
-    <h3>Adjust your photo</h3>
-    <p class="hint">Drag to reposition, use the slider to zoom.</p>
-    <div class="crop-container" id="crop-container">
-      <img id="crop-img" src="">
-    </div>
-    <div class="crop-controls">
-      <span class="hint">Zoom</span>
-      <input type="range" id="crop-zoom" min="100" max="300" value="100">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeCropModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="applyCrop()">Use this photo</button>
-    </div>
-  </div>
-</div>
-
 <script>
 // ==== Supabase configuration ====
 // Fill these in with your project's values from Supabase: Settings > API
@@ -664,7 +593,9 @@ function mapRowToRecord(row){
     registeredAt: row.registered_at,
     username: row.username,
     photo: row.photo,
-    receiptPhoto: row.receipt_photo
+    receiptPhoto: row.receipt_photo,
+    checkedIn: row.checked_in,
+    checkedInAt: row.checked_in_at
   };
 }
 
@@ -819,7 +750,6 @@ function tryLogin(which){
 }
 
 let currentGuestRecord = null;
-let editPhotoDraft = null;
 
 async function tryGuestLogin(){
   const idInput = document.getElementById('guest-id').value.trim().toUpperCase();
@@ -856,15 +786,6 @@ function populateEditProfileForm(){
   document.getElementById('e-network-leader').value = currentGuestRecord.networkLeader || '';
   document.getElementById('e-school').value = currentGuestRecord.school || '';
   document.getElementById('e-phone').value = currentGuestRecord.phone || '';
-  editPhotoDraft = currentGuestRecord.photo || null;
-  const preview = document.getElementById('e-photo-preview');
-  if(editPhotoDraft){
-    preview.style.backgroundImage = `url(${editPhotoDraft})`;
-    preview.textContent = '';
-  }else{
-    preview.style.backgroundImage = 'none';
-    preview.textContent = 'No photo set';
-  }
   document.getElementById('edit-profile-error').innerHTML = '';
   document.getElementById('edit-profile-confirm').style.display = 'none';
 }
@@ -872,110 +793,6 @@ function populateEditProfileForm(){
 document.getElementById('btn-view-id-from-edit').addEventListener('click', ()=>{
   openViewIdModal();
 });
-
-document.getElementById('e-photo').addEventListener('change', (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  openCropModal(file, (croppedDataUrl)=>{
-    editPhotoDraft = croppedDataUrl;
-    const preview = document.getElementById('e-photo-preview');
-    preview.style.backgroundImage = `url(${editPhotoDraft})`;
-    preview.textContent = '';
-  });
-  e.target.value = '';
-});
-
-// ==== Photo crop modal ====
-let cropState = { img: null, naturalW: 0, naturalH: 0, baseScale: 1, scale: 1, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, callback: null };
-const CROP_SIZE = 260;
-const CROP_OUTPUT = 480;
-
-function openCropModal(file, callback){
-  cropState.callback = callback;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = document.getElementById('crop-img');
-    img.onload = () => {
-      cropState.naturalW = img.naturalWidth;
-      cropState.naturalH = img.naturalHeight;
-      cropState.baseScale = Math.max(CROP_SIZE / cropState.naturalW, CROP_SIZE / cropState.naturalH);
-      cropState.scale = cropState.baseScale;
-      cropState.offsetX = (CROP_SIZE - cropState.naturalW * cropState.scale) / 2;
-      cropState.offsetY = (CROP_SIZE - cropState.naturalH * cropState.scale) / 2;
-      document.getElementById('crop-zoom').value = 100;
-      applyCropTransform();
-      document.getElementById('crop-modal').classList.add('active');
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function clampCropOffsets(){
-  const dispW = cropState.naturalW * cropState.scale;
-  const dispH = cropState.naturalH * cropState.scale;
-  const minX = Math.min(0, CROP_SIZE - dispW);
-  const minY = Math.min(0, CROP_SIZE - dispH);
-  cropState.offsetX = Math.max(minX, Math.min(0, cropState.offsetX));
-  cropState.offsetY = Math.max(minY, Math.min(0, cropState.offsetY));
-}
-
-function applyCropTransform(){
-  clampCropOffsets();
-  const img = document.getElementById('crop-img');
-  img.style.width = (cropState.naturalW * cropState.scale) + 'px';
-  img.style.height = (cropState.naturalH * cropState.scale) + 'px';
-  img.style.left = cropState.offsetX + 'px';
-  img.style.top = cropState.offsetY + 'px';
-}
-
-document.getElementById('crop-zoom').addEventListener('input', (e)=>{
-  const factor = e.target.value / 100;
-  const newScale = cropState.baseScale * factor;
-  const cx = CROP_SIZE / 2, cy = CROP_SIZE / 2;
-  const imgCx = (cx - cropState.offsetX) / cropState.scale;
-  const imgCy = (cy - cropState.offsetY) / cropState.scale;
-  cropState.scale = newScale;
-  cropState.offsetX = cx - imgCx * cropState.scale;
-  cropState.offsetY = cy - imgCy * cropState.scale;
-  applyCropTransform();
-});
-
-const cropContainer = document.getElementById('crop-container');
-cropContainer.addEventListener('pointerdown', (e)=>{
-  cropState.dragging = true;
-  cropState.startX = e.clientX - cropState.offsetX;
-  cropState.startY = e.clientY - cropState.offsetY;
-  cropContainer.setPointerCapture(e.pointerId);
-});
-cropContainer.addEventListener('pointermove', (e)=>{
-  if(!cropState.dragging) return;
-  cropState.offsetX = e.clientX - cropState.startX;
-  cropState.offsetY = e.clientY - cropState.startY;
-  applyCropTransform();
-});
-cropContainer.addEventListener('pointerup', ()=>{ cropState.dragging = false; });
-cropContainer.addEventListener('pointercancel', ()=>{ cropState.dragging = false; });
-
-function closeCropModal(){
-  document.getElementById('crop-modal').classList.remove('active');
-  cropState.callback = null;
-}
-
-function applyCrop(){
-  const canvas = document.createElement('canvas');
-  canvas.width = CROP_OUTPUT;
-  canvas.height = CROP_OUTPUT;
-  const ctx = canvas.getContext('2d');
-  const img = document.getElementById('crop-img');
-  const sx = -cropState.offsetX / cropState.scale;
-  const sy = -cropState.offsetY / cropState.scale;
-  const sSize = CROP_SIZE / cropState.scale;
-  ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, CROP_OUTPUT, CROP_OUTPUT);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-  if(cropState.callback) cropState.callback(dataUrl);
-  closeCropModal();
-}
 
 document.getElementById('btn-save-profile').addEventListener('click', async ()=>{
   if(!currentGuestRecord) return;
@@ -987,8 +804,7 @@ document.getElementById('btn-save-profile').addEventListener('click', async ()=>
     lifeGuide: document.getElementById('e-life-guide').value.trim(),
     networkLeader: document.getElementById('e-network-leader').value.trim(),
     school: document.getElementById('e-school').value.trim(),
-    phone: document.getElementById('e-phone').value.trim(),
-    photo: editPhotoDraft
+    phone: document.getElementById('e-phone').value.trim()
   };
   if(!updated.name || !updated.address || !updated.phone){
     errBox.innerHTML = '<div class="error-box">Name, address, and phone can\'t be empty.</div>';
@@ -1001,8 +817,7 @@ document.getElementById('btn-save-profile').addEventListener('click', async ()=>
       life_guide: updated.lifeGuide,
       network_leader: updated.networkLeader,
       school: updated.school,
-      phone: updated.phone,
-      photo: updated.photo
+      phone: updated.phone
     }).eq('id', currentGuestRecord.id);
     if(error) throw error;
     currentGuestRecord = { ...currentGuestRecord, ...updated };
@@ -1047,9 +862,9 @@ document.getElementById('f-receipt').addEventListener('change', (e)=>{
       return;
     }
     regReceiptDraft = reader.result;
-    const preview = document.getElementById('f-receipt-preview');
-    preview.style.backgroundImage = `url(${regReceiptDraft})`;
-    preview.textContent = '';
+    const status = document.getElementById('f-receipt-preview');
+    status.textContent = '✓ Receipt uploaded';
+    status.classList.add('uploaded');
   };
   reader.readAsDataURL(file);
 });
@@ -1344,8 +1159,9 @@ async function registerUser(){
   document.getElementById('f-paid').checked=false;
   document.getElementById('f-receipt').value='';
   regReceiptDraft = null;
-  document.getElementById('f-receipt-preview').style.backgroundImage = 'none';
-  document.getElementById('f-receipt-preview').textContent = 'No receipt uploaded';
+  const receiptStatus = document.getElementById('f-receipt-preview');
+  receiptStatus.classList.remove('uploaded');
+  receiptStatus.textContent = 'No receipt uploaded yet';
 
   showView('myid');
 }
@@ -1356,31 +1172,19 @@ let currentMyIdRecord = null;
 function buildBadgeHtml(record, qrElId){
   return `
     <div class="badge" id="id-badge-card">
-      <div class="badge-photo-col" style="${record.photo ? `background-image:url(${record.photo});` : ''}">
-        ${record.photo ? '' : 'No photo'}
+      <div class="badge-head-row">
+        <span class="org">Seminar ID</span>
+        <span class="role">${escapeHtml(record.status)}</span>
       </div>
-      <div class="badge-info-col">
-        <div class="badge-head-row">
-          <span class="org">Seminar ID</span>
-          <span class="role">${escapeHtml(record.status)}</span>
-        </div>
-        <div class="qr-info-row">
-          <div class="text-info">
-            <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
-            <div class="name">${escapeHtml(record.name)}</div>
-            <div class="meta-line">${escapeHtml(record.school)}</div>
-            ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
-            ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
-            <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
-            <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
-            <div class="meta-line">${escapeHtml(record.address)}</div>
-            <div class="meta-line">${escapeHtml(record.phone)}</div>
-            <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
-          </div>
-          <div class="qr-slot"><div id="${qrElId}"></div></div>
-          <div class="serial" style="align-self:center;">${record.id}</div>
-        </div>
-      </div>
+      <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
+      <div class="name">${escapeHtml(record.name)}</div>
+      <div class="meta-line">${escapeHtml(record.school)}</div>
+      ${record.level ? `<div class="meta-line">${escapeHtml(record.level)}</div>` : ''}
+      ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
+      <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
+      <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
+      <div class="qr-slot"><div id="${qrElId}"></div></div>
+      <div class="serial">${record.id}</div>
     </div>`;
 }
 
@@ -1480,8 +1284,26 @@ async function lookupId(idRaw){
       resultBox.innerHTML = '<div class="not-found">No guest found for that ID.</div>';
       return;
     }
-    const r = mapRowToRecord(data);
+    let r = mapRowToRecord(data);
+    let alreadyCheckedIn = !!r.checkedIn;
+
+    if(!alreadyCheckedIn){
+      const nowIso = new Date().toISOString();
+      const { error: updateError } = await sb.from('registrants')
+        .update({ checked_in: true, checked_in_at: nowIso })
+        .eq('id', id);
+      if(!updateError){
+        r.checkedIn = true;
+        r.checkedInAt = nowIso;
+      }
+    }
+
+    const statusBanner = alreadyCheckedIn
+      ? `<div class="error-box" style="margin-bottom:14px;">⚠ This ID was already checked in at ${new Date(r.checkedInAt).toLocaleString()}. Do not allow re-entry unless an admin has cleared it.</div>`
+      : `<div class="save-confirm" style="display:block; margin-bottom:14px;">✓ Checked in just now.</div>`;
+
     resultBox.innerHTML = `
+      ${statusBanner}
       <div class="result-card">
         <h3>Verified attendee</h3>
         <div class="row"><span class="k">Name</span><span>${escapeHtml(r.name)}</span></div>
@@ -1593,7 +1415,15 @@ async function loadAllRegistrants(){
         <td>${escapeHtml(r.phone)}</td>
         <td>${r.paid ? 'Yes' : 'Not yet'}</td>
         <td>${new Date(r.registeredAt).toLocaleString()}</td>
-        <td><button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button></td>
+        <td>
+          ${r.checkedIn
+            ? `<span style="color:var(--teal); font-weight:600;">Checked in</span><br><span class="hint">${new Date(r.checkedInAt).toLocaleString()}</span>`
+            : `<span style="color:var(--ink-soft);">Not yet</span>`}
+        </td>
+        <td>
+          <button class="link-btn" onclick="toggleCheckedIn('${r.id}', ${r.checkedIn ? 'false' : 'true'})">${r.checkedIn ? 'Undo check-in' : 'Check in'}</button><br>
+          <button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button>
+        </td>
       </tr>`).join('');
 
     content.innerHTML = `
@@ -1602,7 +1432,7 @@ async function loadAllRegistrants(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Actions</th>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Check-in</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1613,6 +1443,19 @@ async function loadAllRegistrants(){
   }
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
+
+async function toggleCheckedIn(id, newValue){
+  try{
+    const { error } = await sb.from('registrants').update({
+      checked_in: newValue,
+      checked_in_at: newValue ? new Date().toISOString() : null
+    }).eq('id', id);
+    if(error) throw error;
+    await loadAllRegistrants();
+  }catch(e){
+    alert('Could not update check-in status. Please try again.');
+  }
+}
 
 async function deleteRegistrant(id){
   const confirmed = window.confirm(`Delete registrant ${id}? This cannot be undone.`);
@@ -1632,10 +1475,10 @@ function exportCsv(){
     alert('Load the guest list first.');
     return;
   }
-  const headers = ['ID','Name','Life Guide','Network Leader','School','Status','Profession','Grade Level','Address','Phone','Paid','Registered At'];
+  const headers = ['ID','Name','Life Guide','Network Leader','School','Status','Profession','Grade Level','Address','Phone','Paid','Registered At','Checked In','Checked In At'];
   const csvRows = [headers.join(',')];
   records.forEach(r=>{
-    const row = [r.id, r.name, r.lifeGuide || '', r.networkLeader || '', r.school || '', r.status, r.profession || '', r.level || '', r.address, r.phone, r.paid ? 'Yes' : 'Not yet', r.registeredAt]
+    const row = [r.id, r.name, r.lifeGuide || '', r.networkLeader || '', r.school || '', r.status, r.profession || '', r.level || '', r.address, r.phone, r.paid ? 'Yes' : 'Not yet', r.registeredAt, r.checkedIn ? 'Yes' : 'No', r.checkedInAt || '']
       .map(v => '"' + String(v).replace(/"/g,'""') + '"');
     csvRows.push(row.join(','));
   });
@@ -1671,4 +1514,3 @@ document.getElementById('btn-export').addEventListener('click', exportCsv);
 </script>
 </body>
 </html>
-<!-- redeploy trigger 1783328205 -->
