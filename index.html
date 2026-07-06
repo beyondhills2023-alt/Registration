@@ -450,6 +450,7 @@
       <button class="btn btn-primary btn-block" id="btn-save-profile">Save changes</button>
       <div id="edit-profile-error"></div>
       <div class="save-confirm" id="edit-profile-confirm">Saved.</div>
+      <button class="btn btn-outline btn-block" id="btn-view-id-from-edit" style="margin-top:12px;">View my ID (with QR)</button>
     </section>
 
     <!-- MY ID -->
@@ -816,6 +817,7 @@ async function tryGuestLogin(){
       return;
     }
     currentGuestRecord = mapRowToRecord(data);
+    currentMyIdRecord = currentGuestRecord;
     document.getElementById('guest-id').value = '';
     document.getElementById('guest-password').value = '';
     showView('edit-profile');
@@ -844,6 +846,10 @@ function populateEditProfileForm(){
   document.getElementById('edit-profile-error').innerHTML = '';
   document.getElementById('edit-profile-confirm').style.display = 'none';
 }
+
+document.getElementById('btn-view-id-from-edit').addEventListener('click', ()=>{
+  openViewIdModal();
+});
 
 document.getElementById('e-photo').addEventListener('change', (e)=>{
   const file = e.target.files[0];
@@ -978,6 +984,7 @@ document.getElementById('btn-save-profile').addEventListener('click', async ()=>
     }).eq('id', currentGuestRecord.id);
     if(error) throw error;
     currentGuestRecord = { ...currentGuestRecord, ...updated };
+    currentMyIdRecord = currentGuestRecord;
     const existingMe = JSON.parse(localStorage.getItem('me') || 'null');
     if(existingMe && existingMe.id === currentGuestRecord.id){
       localStorage.setItem('me', JSON.stringify(currentGuestRecord));
@@ -1333,9 +1340,6 @@ function buildBadgeHtml(record, qrElId){
         <div class="role">${escapeHtml(record.status)}</div>
       </div>
       <div class="qr-slot"><div id="${qrElId}"></div></div>
-      ${record.photo
-        ? `<img class="photo-square" src="${record.photo}">`
-        : `<div class="photo-square-placeholder">No photo</div>`}
       <div class="badge-body">
         <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
         <div class="name">${escapeHtml(record.name)}</div>
