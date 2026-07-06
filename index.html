@@ -155,11 +155,11 @@
     font-size:12px; font-weight:600; color:var(--ink-soft);
   }
   .badge .qr-info-row{
-    display:flex; gap:16px; align-items:flex-start;
+    display:flex; flex-direction:column; gap:12px;
   }
-  .badge .qr-slot{ flex:0 0 auto; }
+  .badge .qr-slot{ align-self:center; }
   .badge .qr-slot > div{background:#fff;}
-  .badge .text-info{ flex:1; min-width:0; }
+  .badge .text-info{ width:100%; }
   .badge .name{font-size:15px; font-weight:700; margin:0 0 2px;}
   .badge .first-name{font-size:20px; font-weight:800; margin:0 0 2px; color:var(--navy);}
   .badge .meta-line{font-size:12px; color:var(--ink-soft); margin:2px 0;}
@@ -1365,7 +1365,6 @@ function buildBadgeHtml(record, qrElId){
           <span class="role">${escapeHtml(record.status)}</span>
         </div>
         <div class="qr-info-row">
-          <div class="qr-slot"><div id="${qrElId}"></div></div>
           <div class="text-info">
             <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
             <div class="name">${escapeHtml(record.name)}</div>
@@ -1377,8 +1376,9 @@ function buildBadgeHtml(record, qrElId){
             <div class="meta-line">${escapeHtml(record.address)}</div>
             <div class="meta-line">${escapeHtml(record.phone)}</div>
             <div class="meta-line">${record.paid ? 'Paid' : 'Not yet paid'}</div>
-            <div class="serial">${record.id}</div>
           </div>
+          <div class="qr-slot"><div id="${qrElId}"></div></div>
+          <div class="serial" style="align-self:center;">${record.id}</div>
         </div>
       </div>
     </div>`;
@@ -1389,11 +1389,11 @@ function renderQrInto(elId, text){
   holder.innerHTML = '';
   new QRCode(holder, {
     text: text,
-    width: 130,
-    height: 130,
+    width: 190,
+    height: 190,
     colorDark: '#000000',
     colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
+    correctLevel: QRCode.CorrectLevel.M
   });
 }
 
