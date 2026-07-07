@@ -1075,8 +1075,11 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
     primaryColor: document.getElementById('c-color-primary').value,
     accentColor: document.getElementById('c-color-accent').value,
     photo: photoDraft,
+    headingTextColor: document.getElementById('c-heading-text-color').value,
+    homeBackgroundPhoto: homeBgPhotoDraft,
     paymentHeading: document.getElementById('c-payment-heading').value.trim() || DEFAULT_SITE_CONFIG.paymentHeading,
     paymentSubheading: document.getElementById('c-payment-subheading').value.trim(),
+    paymentSubheading2: document.getElementById('c-payment-subheading-2').value.trim(),
     paymentPhoto: paymentPhotoDraft
   };
   siteConfig = newConfig;
@@ -1088,8 +1091,11 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
       primary_color: newConfig.primaryColor,
       accent_color: newConfig.accentColor,
       photo: newConfig.photo,
+      heading_text_color: newConfig.headingTextColor,
+      home_background_photo: newConfig.homeBackgroundPhoto,
       payment_heading: newConfig.paymentHeading,
       payment_subheading: newConfig.paymentSubheading,
+      payment_subheading2: newConfig.paymentSubheading2,
       payment_photo: newConfig.paymentPhoto
     }).eq('id', 1);
     if(error) throw error;
