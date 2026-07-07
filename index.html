@@ -173,6 +173,35 @@
   }
   .upload-status.uploaded{ background:var(--teal-light); color:var(--teal); border-color:#BBD6CE; }
 
+  /* Home page */
+  .home-buttons{
+    display:flex; flex-direction:column; gap:16px;
+    max-width:360px; margin:60px auto 0;
+  }
+  .btn-home{
+    background:var(--brass); color:var(--ink);
+    border:none; border-radius:10px;
+    padding:20px 24px; font-size:16px; font-weight:700;
+    cursor:pointer; text-transform:uppercase; letter-spacing:0.3px;
+  }
+  .btn-home:hover{ filter:brightness(0.95); }
+
+  /* Payment info block on registration form */
+  .payment-info-block{
+    display:flex; gap:16px; align-items:stretch;
+    margin:20px 0 4px; background:var(--paper-dark);
+    border-radius:10px; padding:14px; flex-wrap:wrap;
+  }
+  .payment-info-photo{
+    flex:0 0 auto; width:140px; aspect-ratio:4/3; border-radius:8px;
+    background-size:cover; background-position:center; background-color:#e4e0d2;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:11.5px; text-align:center; padding:6px;
+  }
+  .payment-info-text{ flex:1; min-width:140px; }
+  .payment-info-heading{ font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+  .payment-info-subheading{ font-size:13px; color:var(--ink-soft); white-space:pre-line; }
+
 
   .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft);}
   .empty-state .btn{margin-top:14px;}
@@ -302,8 +331,21 @@
 
   <main>
 
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <div class="home-buttons">
+        <button class="btn-home" onclick="showView('register')">Register</button>
+        <button class="btn-home" onclick="showView('staff-login')">Log in as Staff</button>
+        <button class="btn-home" onclick="showView('admin-login')">Log in as Admin</button>
+      </div>
+      <p style="text-align:center; margin-top:20px;">
+        <button class="link-btn" onclick="showView('guest-login')">Log in to my ID</button>
+      </p>
+    </section>
+
     <!-- REGISTER -->
-    <section id="view-register" class="view active">
+    <section id="view-register" class="view">
+      <p style="margin:0 0 16px;"><button class="link-btn" onclick="showView('home')">&larr; Back to home</button></p>
       <label for="f-name">Full name</label>
       <input type="text" id="f-name" placeholder="Juan Dela Cruz">
 
@@ -367,6 +409,14 @@
         <span>I have already paid the seminar registration fee.</span>
       </label>
 
+      <div class="payment-info-block">
+        <div class="payment-info-photo" id="payment-info-photo">No payment photo set</div>
+        <div class="payment-info-text">
+          <div class="payment-info-heading" id="payment-info-heading">Payment Instructions</div>
+          <div class="payment-info-subheading" id="payment-info-subheading"></div>
+        </div>
+      </div>
+
       <label for="f-receipt">Proof of payment (receipt photo)</label>
       <input type="file" id="f-receipt" accept="image/*">
       <div class="upload-status" id="f-receipt-preview">No receipt uploaded yet</div>
@@ -388,7 +438,7 @@
         <br>
         <button class="btn btn-primary" onclick="tryGuestLogin()">Log in</button>
         <div class="gate-error" id="guest-login-error">ID number or password not recognized.</div>
-        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('home')">Back to home</button></p>
       </div>
     </section>
 
@@ -438,7 +488,7 @@
         <br>
         <button class="btn btn-primary" onclick="tryLogin('staff')">Log in</button>
         <div class="gate-error" id="staff-login-error">Incorrect code.</div>
-        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('home')">Back to home</button></p>
       </div>
     </section>
 
@@ -446,7 +496,7 @@
     <section id="view-verify" class="view">
       <div class="staff-subnav">
         <button class="tab-link active" id="subnav-verify" onclick="showView('verify')">Verify guests</button>
-        <button class="tab-link" id="subnav-customize-1" onclick="showView('customize')">Edit page design</button>
+        <button class="tab-link" id="subnav-customize-1" onclick="tryOpenCustomize()">Edit page design</button>
         <div class="spacer"></div>
         <button class="link-btn" onclick="logout('staff')">Log out</button>
       </div>
@@ -465,11 +515,25 @@
       <div id="verify-result"></div>
     </section>
 
+    <!-- MODERATOR LOGIN (staff-only, gates design editing) -->
+    <section id="view-moderator-login" class="view">
+      <div class="login-box">
+        <div class="lock-icon">&#128274;</div>
+        <h3>Moderator log in</h3>
+        <p>Enter the moderator code to edit the page design and aesthetics.</p>
+        <input type="password" id="moderator-code" placeholder="Moderator code">
+        <br>
+        <button class="btn btn-primary" onclick="tryModeratorLogin()">Log in</button>
+        <div class="gate-error" id="moderator-login-error">Incorrect code.</div>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('verify')">Back</button></p>
+      </div>
+    </section>
+
     <!-- CUSTOMIZE (staff) -->
     <section id="view-customize" class="view">
       <div class="staff-subnav">
         <button class="tab-link" id="subnav-verify-2" onclick="showView('verify')">Verify guests</button>
-        <button class="tab-link active" id="subnav-customize-2" onclick="showView('customize')">Edit page design</button>
+        <button class="tab-link active" id="subnav-customize-2" onclick="tryOpenCustomize()">Edit page design</button>
         <div class="spacer"></div>
         <button class="link-btn" onclick="logout('staff')">Log out</button>
       </div>
@@ -497,6 +561,20 @@
         </div>
       </div>
 
+      <label style="margin-top:26px;">Payment info section (shown on registration form)</label>
+      <p class="hint" style="margin-top:0;">This appears above the receipt upload — use it to show your GCash/bank details.</p>
+
+      <label for="c-payment-heading">Payment heading</label>
+      <input type="text" id="c-payment-heading" placeholder="Payment Instructions">
+
+      <label for="c-payment-subheading">Payment subheading / details</label>
+      <input type="text" id="c-payment-subheading" placeholder="e.g. GCash: 0917 000 0000 (Juan Dela Cruz)">
+
+      <label>Payment photo (e.g. GCash QR code)</label>
+      <input type="file" id="c-payment-photo" accept="image/*">
+      <div class="photo-preview" id="c-payment-photo-preview">No payment photo set</div>
+      <p class="hint"><button class="link-btn" id="c-payment-photo-remove">Remove photo</button></p>
+
       <button class="btn btn-primary btn-block" id="btn-save-design">Save changes</button>
       <div class="save-confirm" id="save-confirm">Saved. Guests will see the updated page.</div>
     </section>
@@ -511,7 +589,7 @@
         <br>
         <button class="btn btn-primary" onclick="tryLogin('admin')">Log in</button>
         <div class="gate-error" id="admin-login-error">Incorrect code.</div>
-        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('register')">Back to registration</button></p>
+        <p style="margin-top:16px;"><button class="link-btn" onclick="showView('home')">Back to home</button></p>
       </div>
     </section>
 
@@ -606,16 +684,43 @@ let scanStream = null;
 const STAFF_CODE = "STAFF2026";
 const ADMIN_CODE = "ADMIN2026";
 const GUEST_ACCESS_PASSWORD = "PROTEGE2026";
+const MODERATOR_CODE = "MODERATOR2026";
+let moderatorUnlocked = false;
+
+function tryOpenCustomize(){
+  if(moderatorUnlocked){
+    showView('customize');
+  }else{
+    showView('moderator-login');
+  }
+}
+
+function tryModeratorLogin(){
+  const val = document.getElementById('moderator-code').value.trim();
+  const errEl = document.getElementById('moderator-login-error');
+  if(val === MODERATOR_CODE){
+    moderatorUnlocked = true;
+    document.getElementById('moderator-code').value = '';
+    errEl.style.display = 'none';
+    showView('customize');
+  }else{
+    errEl.style.display = 'block';
+  }
+}
 
 const DEFAULT_SITE_CONFIG = {
   headline: "Seminar Registration",
   subheadline: "Register for the seminar and get your ID",
   primaryColor: "#1B2432",
   accentColor: "#B8912B",
-  photo: null
+  photo: null,
+  paymentHeading: "Payment Instructions",
+  paymentSubheading: "",
+  paymentPhoto: null
 };
 let siteConfig = { ...DEFAULT_SITE_CONFIG };
 let photoDraft = null;
+let paymentPhotoDraft = null;
 
 function applySiteConfig(cfg){
   document.getElementById('site-headline').textContent = cfg.headline;
@@ -629,6 +734,16 @@ function applySiteConfig(cfg){
   }else{
     header.style.backgroundImage = 'none';
   }
+  document.getElementById('payment-info-heading').textContent = cfg.paymentHeading || DEFAULT_SITE_CONFIG.paymentHeading;
+  document.getElementById('payment-info-subheading').textContent = cfg.paymentSubheading || '';
+  const paymentPhotoEl = document.getElementById('payment-info-photo');
+  if(cfg.paymentPhoto){
+    paymentPhotoEl.style.backgroundImage = `url(${cfg.paymentPhoto})`;
+    paymentPhotoEl.textContent = '';
+  }else{
+    paymentPhotoEl.style.backgroundImage = 'none';
+    paymentPhotoEl.textContent = 'No payment photo set';
+  }
 }
 
 async function loadSiteConfig(){
@@ -641,7 +756,10 @@ async function loadSiteConfig(){
         subheadline: data.subheadline,
         primaryColor: data.primary_color,
         accentColor: data.accent_color,
-        photo: data.photo
+        photo: data.photo,
+        paymentHeading: data.payment_heading,
+        paymentSubheading: data.payment_subheading,
+        paymentPhoto: data.payment_photo
       };
     }
   }catch(e){}
@@ -655,6 +773,10 @@ function populateCustomizeForm(){
   document.getElementById('c-color-accent').value = siteConfig.accentColor;
   photoDraft = siteConfig.photo;
   updatePhotoPreview();
+  document.getElementById('c-payment-heading').value = siteConfig.paymentHeading || '';
+  document.getElementById('c-payment-subheading').value = siteConfig.paymentSubheading || '';
+  paymentPhotoDraft = siteConfig.paymentPhoto;
+  updatePaymentPhotoPreview();
   document.getElementById('save-confirm').style.display = 'none';
 }
 
@@ -666,6 +788,17 @@ function updatePhotoPreview(){
   }else{
     preview.style.backgroundImage = 'none';
     preview.textContent = 'No photo set';
+  }
+}
+
+function updatePaymentPhotoPreview(){
+  const preview = document.getElementById('c-payment-photo-preview');
+  if(paymentPhotoDraft){
+    preview.style.backgroundImage = `url(${paymentPhotoDraft})`;
+    preview.textContent = '';
+  }else{
+    preview.style.backgroundImage = 'none';
+    preview.textContent = 'No payment photo set';
   }
 }
 
@@ -690,13 +823,37 @@ document.getElementById('c-photo-remove').addEventListener('click', ()=>{
   updatePhotoPreview();
 });
 
+document.getElementById('c-payment-photo').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    if(reader.result.length > 4500000){
+      alert('That photo is too large. Please choose a smaller image.');
+      return;
+    }
+    paymentPhotoDraft = reader.result;
+    updatePaymentPhotoPreview();
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('c-payment-photo-remove').addEventListener('click', ()=>{
+  paymentPhotoDraft = null;
+  document.getElementById('c-payment-photo').value = '';
+  updatePaymentPhotoPreview();
+});
+
 document.getElementById('btn-save-design').addEventListener('click', async ()=>{
   const newConfig = {
     headline: document.getElementById('c-headline').value.trim() || DEFAULT_SITE_CONFIG.headline,
     subheadline: document.getElementById('c-subheadline').value.trim() || DEFAULT_SITE_CONFIG.subheadline,
     primaryColor: document.getElementById('c-color-primary').value,
     accentColor: document.getElementById('c-color-accent').value,
-    photo: photoDraft
+    photo: photoDraft,
+    paymentHeading: document.getElementById('c-payment-heading').value.trim() || DEFAULT_SITE_CONFIG.paymentHeading,
+    paymentSubheading: document.getElementById('c-payment-subheading').value.trim(),
+    paymentPhoto: paymentPhotoDraft
   };
   siteConfig = newConfig;
   applySiteConfig(siteConfig);
@@ -706,7 +863,10 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
       subheadline: newConfig.subheadline,
       primary_color: newConfig.primaryColor,
       accent_color: newConfig.accentColor,
-      photo: newConfig.photo
+      photo: newConfig.photo,
+      payment_heading: newConfig.paymentHeading,
+      payment_subheading: newConfig.paymentSubheading,
+      payment_photo: newConfig.paymentPhoto
     }).eq('id', 1);
     if(error) throw error;
     const confirmEl = document.getElementById('save-confirm');
@@ -720,8 +880,7 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
 function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
-  document.getElementById('bottom-bar').style.display =
-    (name==='register' || name==='myid') ? 'block' : 'none';
+  document.getElementById('bottom-bar').style.display = 'none';
   if(name==='myid') renderMyId();
   if(name==='customize') populateCustomizeForm();
   if(name==='admin'){ renderAdminSchoolList(); renderAdminNetworkLeaderList(); }
@@ -834,10 +993,13 @@ document.getElementById('btn-save-profile').addEventListener('click', async ()=>
 });
 
 function logout(which){
-  if(which==='staff') document.getElementById('staff-login-error').style.display='none';
+  if(which==='staff'){
+    document.getElementById('staff-login-error').style.display='none';
+    moderatorUnlocked = false;
+  }
   if(which==='admin') document.getElementById('admin-login-error').style.display='none';
-  if(which==='guest'){ currentGuestRecord = null; showView('register'); return; }
-  showView('register');
+  if(which==='guest'){ currentGuestRecord = null; showView('home'); return; }
+  showView('home');
 }
 
 function genId(){
@@ -1229,6 +1391,9 @@ async function renderMyId(){
     <p style="text-align:center; margin-top:18px;">
       <button class="link-btn" onclick="showView('register')">Register another attendee on this device</button>
     </p>
+    <p style="text-align:center; margin-top:8px;">
+      <button class="link-btn" onclick="showView('home')">Back to home</button>
+    </p>
   `;
 
   renderQrInto('qr-canvas', record.id);
@@ -1509,7 +1674,7 @@ document.getElementById('btn-export').addEventListener('click', exportCsv);
       return;
     }
   }catch(e){}
-  showView('register');
+  showView('home');
 })();
 </script>
 </body>
