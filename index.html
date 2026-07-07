@@ -202,6 +202,28 @@
   .payment-info-heading{ font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
   .payment-info-subheading{ font-size:13px; color:var(--ink-soft); white-space:pre-line; }
 
+  .status-pill{
+    display:inline-block; padding:3px 10px; border-radius:20px;
+    font-size:11.5px; font-weight:700; letter-spacing:0.2px;
+  }
+  .status-pill.red{ background:var(--red-light); color:var(--red); }
+  .status-pill.green{ background:var(--teal-light); color:var(--teal); }
+  .banner{
+    border-radius:6px; padding:10px 12px; font-size:13px; margin-bottom:10px;
+  }
+  .banner.red{ background:var(--red-light); color:var(--red); border:1px solid #E3B6B2; }
+  .banner.green{ background:var(--teal-light); color:var(--teal); border:1px solid #BBD6CE; }
+  #receipt-modal img{ max-width:100%; border-radius:8px; display:block; margin:10px auto 0; }
+
+  .payment-pill{
+    display:inline-block; margin:6px auto 4px; padding:4px 12px; border-radius:20px;
+    font-size:11.5px; font-weight:700; letter-spacing:0.2px;
+  }
+  .payment-pill.verified{ background:var(--teal-light); color:var(--teal); }
+  .payment-pill.unverified{ background:var(--red-light); color:var(--red); }
+  .qr-slot.qr-verified{ border:3px solid var(--teal); border-radius:10px; padding:8px; display:inline-block; }
+  .qr-slot.qr-unverified{ border:3px solid var(--red); border-radius:10px; padding:8px; display:inline-block; }
+
 
   .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft);}
   .empty-state .btn{margin-top:14px;}
@@ -648,6 +670,17 @@
   </div>
 </div>
 
+<!-- RECEIPT VIEW MODAL (admin) -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal-box">
+    <h3>Payment receipt</h3>
+    <div id="receipt-modal-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeReceiptModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==== Supabase configuration ====
 // Fill these in with your project's values from Supabase: Settings > API
@@ -673,7 +706,9 @@ function mapRowToRecord(row){
     photo: row.photo,
     receiptPhoto: row.receipt_photo,
     checkedIn: row.checked_in,
-    checkedInAt: row.checked_in_at
+    checkedInAt: row.checked_in_at,
+    paymentVerified: row.payment_verified,
+    paymentVerifiedAt: row.payment_verified_at
   };
 }
 
@@ -1338,6 +1373,9 @@ function buildBadgeHtml(record, qrElId){
         <span class="org">Seminar ID</span>
         <span class="role">${escapeHtml(record.status)}</span>
       </div>
+      <div class="payment-pill ${record.paymentVerified ? 'verified' : 'unverified'}">
+        ${record.paymentVerified ? '✓ Payment Verified' : '⚠ Payment Not Verified'}
+      </div>
       <div class="first-name">${escapeHtml(firstNameOf(record.name))}</div>
       <div class="name">${escapeHtml(record.name)}</div>
       <div class="meta-line">${escapeHtml(record.school)}</div>
@@ -1345,7 +1383,7 @@ function buildBadgeHtml(record, qrElId){
       ${record.profession ? `<div class="meta-line">${escapeHtml(record.profession)}</div>` : ''}
       <div class="meta-line">Life guide: ${escapeHtml(record.lifeGuide || '')}</div>
       <div class="meta-line">Network leader: ${escapeHtml(record.networkLeader || '')}</div>
-      <div class="qr-slot"><div id="${qrElId}"></div></div>
+      <div class="qr-slot ${record.paymentVerified ? 'qr-verified' : 'qr-unverified'}"><div id="${qrElId}"></div></div>
       <div class="serial">${record.id}</div>
     </div>`;
 }
@@ -1379,6 +1417,17 @@ async function renderMyId(){
       </div>`;
     return;
   }
+
+  // Pull the latest status (payment verification, check-in) from the database
+  // rather than relying only on the snapshot saved at registration time.
+  try{
+    const { data, error } = await sb.from('registrants').select('*').eq('id', record.id).maybeSingle();
+    if(!error && data){
+      record = mapRowToRecord(data);
+      localStorage.setItem('me', JSON.stringify(record));
+    }
+  }catch(e){}
+
   currentMyIdRecord = record;
 
   wrap.innerHTML = `
@@ -1469,6 +1518,9 @@ async function lookupId(idRaw){
 
     resultBox.innerHTML = `
       ${statusBanner}
+      <div class="banner ${r.paymentVerified ? 'green' : 'red'}">
+        ${r.paymentVerified ? '✓ Payment verified by admin' : '⚠ Payment NOT yet verified by admin — check with admin before allowing entry.'}
+      </div>
       <div class="result-card">
         <h3>Verified attendee</h3>
         <div class="row"><span class="k">Name</span><span>${escapeHtml(r.name)}</span></div>
@@ -1481,7 +1533,7 @@ async function lookupId(idRaw){
         <div class="row"><span class="k">Network leader</span><span>${escapeHtml(r.networkLeader || '')}</span></div>
         <div class="row"><span class="k">Address</span><span>${escapeHtml(r.address)}</span></div>
         <div class="row"><span class="k">Phone</span><span>${escapeHtml(r.phone)}</span></div>
-        <div class="row"><span class="k">Paid</span><span>${r.paid ? 'Yes' : 'Not yet'}</span></div>
+        <div class="row"><span class="k">Paid (self-reported)</span><span>${r.paid ? 'Yes' : 'Not yet'}</span></div>
         <div class="row"><span class="k">Registered</span><span>${new Date(r.registeredAt).toLocaleString()}</span></div>
       </div>`;
   }catch(e){
@@ -1586,6 +1638,13 @@ async function loadAllRegistrants(){
             : `<span style="color:var(--ink-soft);">Not yet</span>`}
         </td>
         <td>
+          <span class="status-pill ${r.paymentVerified ? 'green' : 'red'}">${r.paymentVerified ? 'Verified' : 'Not verified'}</span>
+        </td>
+        <td>
+          ${r.receiptPhoto ? `<button class="link-btn" onclick="viewReceipt('${r.id}')">View receipt</button>` : `<span class="hint">None uploaded</span>`}
+        </td>
+        <td>
+          <button class="link-btn" onclick="toggleVerified('${r.id}', ${r.paymentVerified ? 'false' : 'true'})">${r.paymentVerified ? 'Unmark verified' : 'Mark verified'}</button><br>
           <button class="link-btn" onclick="toggleCheckedIn('${r.id}', ${r.checkedIn ? 'false' : 'true'})">${r.checkedIn ? 'Undo check-in' : 'Check in'}</button><br>
           <button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button>
         </td>
@@ -1597,7 +1656,7 @@ async function loadAllRegistrants(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Check-in</th><th>Actions</th>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Check-in</th><th>Payment</th><th>Receipt</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1608,6 +1667,34 @@ async function loadAllRegistrants(){
   }
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
+
+function viewReceipt(id){
+  const record = (window.__allRecords || []).find(r => r.id === id);
+  const holder = document.getElementById('receipt-modal-content');
+  if(record && record.receiptPhoto){
+    holder.innerHTML = `<img src="${record.receiptPhoto}">`;
+  }else{
+    holder.innerHTML = '<p class="hint">No receipt on file.</p>';
+  }
+  document.getElementById('receipt-modal').classList.add('active');
+}
+
+function closeReceiptModal(){
+  document.getElementById('receipt-modal').classList.remove('active');
+}
+
+async function toggleVerified(id, newValue){
+  try{
+    const { error } = await sb.from('registrants').update({
+      payment_verified: newValue,
+      payment_verified_at: newValue ? new Date().toISOString() : null
+    }).eq('id', id);
+    if(error) throw error;
+    await loadAllRegistrants();
+  }catch(e){
+    alert('Could not update payment verification. Please try again.');
+  }
+}
 
 async function toggleCheckedIn(id, newValue){
   try{
@@ -1640,10 +1727,10 @@ function exportCsv(){
     alert('Load the guest list first.');
     return;
   }
-  const headers = ['ID','Name','Life Guide','Network Leader','School','Status','Profession','Grade Level','Address','Phone','Paid','Registered At','Checked In','Checked In At'];
+  const headers = ['ID','Name','Life Guide','Network Leader','School','Status','Profession','Grade Level','Address','Phone','Paid (self-reported)','Registered At','Checked In','Checked In At','Payment Verified','Payment Verified At'];
   const csvRows = [headers.join(',')];
   records.forEach(r=>{
-    const row = [r.id, r.name, r.lifeGuide || '', r.networkLeader || '', r.school || '', r.status, r.profession || '', r.level || '', r.address, r.phone, r.paid ? 'Yes' : 'Not yet', r.registeredAt, r.checkedIn ? 'Yes' : 'No', r.checkedInAt || '']
+    const row = [r.id, r.name, r.lifeGuide || '', r.networkLeader || '', r.school || '', r.status, r.profession || '', r.level || '', r.address, r.phone, r.paid ? 'Yes' : 'Not yet', r.registeredAt, r.checkedIn ? 'Yes' : 'No', r.checkedInAt || '', r.paymentVerified ? 'Yes' : 'No', r.paymentVerifiedAt || '']
       .map(v => '"' + String(v).replace(/"/g,'""') + '"');
     csvRows.push(row.join(','));
   });
