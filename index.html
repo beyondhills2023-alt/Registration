@@ -43,22 +43,29 @@
   header.top{
     background:var(--navy);
     color:var(--paper);
-    padding:22px 24px 18px;
+    padding:34px 24px 30px;
+    text-align:center;
   }
   header.top h1{
     margin:0;
-    font-size:19px;
-    font-weight:600;
+    font-size:34px;
+    font-weight:800;
     letter-spacing:0.3px;
   }
   header.top p{
-    margin:4px 0 0;
-    font-size:13px;
-    color:#AEB8C8;
+    margin:6px 0 0;
+    font-size:16px;
+    font-weight:700;
   }
   main{padding:24px; flex:1;}
   .view{display:none;}
   .view.active{display:block;}
+  #view-home{
+    margin:-24px; padding:40px 24px;
+    min-height:calc(100vh - 200px);
+    background-size:cover; background-position:center;
+    background-color:var(--paper);
+  }
 
   label{
     display:block;
@@ -193,14 +200,14 @@
     border-radius:10px; padding:14px; flex-wrap:wrap;
   }
   .payment-info-photo{
-    flex:0 0 auto; width:140px; aspect-ratio:4/3; border-radius:8px;
+    flex:0 0 auto; width:140px; aspect-ratio:1/1; border-radius:8px;
     background-size:cover; background-position:center; background-color:#e4e0d2;
     display:flex; align-items:center; justify-content:center;
     color:var(--ink-soft); font-size:11.5px; text-align:center; padding:6px;
   }
   .payment-info-text{ flex:1; min-width:140px; }
   .payment-info-heading{ font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
-  .payment-info-subheading{ font-size:13px; color:var(--ink-soft); white-space:pre-line; }
+  .payment-info-subheading{ font-size:13px; color:var(--ink-soft); white-space:pre-line; margin-top:2px; }
 
   .status-pill{
     display:inline-block; padding:3px 10px; border-radius:20px;
@@ -214,6 +221,16 @@
   .banner.red{ background:var(--red-light); color:var(--red); border:1px solid #E3B6B2; }
   .banner.green{ background:var(--teal-light); color:var(--teal); border:1px solid #BBD6CE; }
   #receipt-modal img{ max-width:100%; border-radius:8px; display:block; margin:10px auto 0; }
+  .crop-container{
+    width:260px; height:260px; margin:14px auto; border-radius:10px;
+    overflow:hidden; position:relative; background:#222; touch-action:none;
+  }
+  .crop-container img{
+    position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none;
+    cursor:grab;
+  }
+  .crop-controls{display:flex; align-items:center; gap:10px; margin-top:6px;}
+  .crop-controls input[type=range]{flex:1;}
 
   .payment-pill{
     display:inline-block; margin:6px auto 4px; padding:4px 12px; border-radius:20px;
@@ -436,6 +453,7 @@
         <div class="payment-info-text">
           <div class="payment-info-heading" id="payment-info-heading">Payment Instructions</div>
           <div class="payment-info-subheading" id="payment-info-subheading"></div>
+          <div class="payment-info-subheading" id="payment-info-subheading-2"></div>
         </div>
       </div>
 
@@ -583,14 +601,26 @@
         </div>
       </div>
 
+      <label for="c-heading-text-color">Heading text color</label>
+      <input type="color" id="c-heading-text-color" value="#000000">
+      <p class="hint" style="margin-top:4px;">Color of the heading/subheading text shown over the header and home page photos.</p>
+
+      <label style="margin-top:20px;">Home page background photo</label>
+      <input type="file" id="c-home-bg-photo" accept="image/*">
+      <div class="photo-preview" id="c-home-bg-photo-preview">No background photo set</div>
+      <p class="hint"><button class="link-btn" id="c-home-bg-photo-remove">Remove photo</button></p>
+
       <label style="margin-top:26px;">Payment info section (shown on registration form)</label>
       <p class="hint" style="margin-top:0;">This appears above the receipt upload — use it to show your GCash/bank details.</p>
 
       <label for="c-payment-heading">Payment heading</label>
       <input type="text" id="c-payment-heading" placeholder="Payment Instructions">
 
-      <label for="c-payment-subheading">Payment subheading / details</label>
-      <input type="text" id="c-payment-subheading" placeholder="e.g. GCash: 0917 000 0000 (Juan Dela Cruz)">
+      <label for="c-payment-subheading">Payment subheading — line 1</label>
+      <input type="text" id="c-payment-subheading" placeholder="e.g. GCash: 0917 000 0000">
+
+      <label for="c-payment-subheading-2">Payment subheading — line 2</label>
+      <input type="text" id="c-payment-subheading-2" placeholder="e.g. Account name: Juan Dela Cruz">
 
       <label>Payment photo (e.g. GCash QR code)</label>
       <input type="file" id="c-payment-photo" accept="image/*">
@@ -681,6 +711,25 @@
   </div>
 </div>
 
+<!-- CROP PHOTO MODAL (square output, used for payment photo) -->
+<div class="modal-overlay" id="crop-modal">
+  <div class="modal-box">
+    <h3>Adjust photo</h3>
+    <p class="hint">Drag to reposition, use the slider to zoom. Output is always square.</p>
+    <div class="crop-container" id="crop-container">
+      <img id="crop-img" src="">
+    </div>
+    <div class="crop-controls">
+      <span class="hint">Zoom</span>
+      <input type="range" id="crop-zoom" min="100" max="300" value="100">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCropModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyCrop()">Use this photo</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==== Supabase configuration ====
 // Fill these in with your project's values from Supabase: Settings > API
@@ -749,13 +798,17 @@ const DEFAULT_SITE_CONFIG = {
   primaryColor: "#1B2432",
   accentColor: "#B8912B",
   photo: null,
+  headingTextColor: "#000000",
+  homeBackgroundPhoto: null,
   paymentHeading: "Payment Instructions",
   paymentSubheading: "",
+  paymentSubheading2: "",
   paymentPhoto: null
 };
 let siteConfig = { ...DEFAULT_SITE_CONFIG };
 let photoDraft = null;
 let paymentPhotoDraft = null;
+let homeBgPhotoDraft = null;
 
 function applySiteConfig(cfg){
   document.getElementById('site-headline').textContent = cfg.headline;
@@ -763,14 +816,24 @@ function applySiteConfig(cfg){
   document.documentElement.style.setProperty('--navy', cfg.primaryColor);
   document.documentElement.style.setProperty('--navy-light', cfg.primaryColor);
   document.documentElement.style.setProperty('--brass', cfg.accentColor);
+  const headingColor = cfg.headingTextColor || DEFAULT_SITE_CONFIG.headingTextColor;
+  document.getElementById('site-headline').style.color = headingColor;
+  document.getElementById('site-subheadline').style.color = headingColor;
   const header = document.getElementById('site-header');
   if(cfg.photo){
-    header.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${cfg.photo})`;
+    header.style.backgroundImage = `url(${cfg.photo})`;
   }else{
     header.style.backgroundImage = 'none';
   }
+  const homeView = document.getElementById('view-home');
+  if(cfg.homeBackgroundPhoto){
+    homeView.style.backgroundImage = `url(${cfg.homeBackgroundPhoto})`;
+  }else{
+    homeView.style.backgroundImage = 'none';
+  }
   document.getElementById('payment-info-heading').textContent = cfg.paymentHeading || DEFAULT_SITE_CONFIG.paymentHeading;
   document.getElementById('payment-info-subheading').textContent = cfg.paymentSubheading || '';
+  document.getElementById('payment-info-subheading-2').textContent = cfg.paymentSubheading2 || '';
   const paymentPhotoEl = document.getElementById('payment-info-photo');
   if(cfg.paymentPhoto){
     paymentPhotoEl.style.backgroundImage = `url(${cfg.paymentPhoto})`;
@@ -792,8 +855,11 @@ async function loadSiteConfig(){
         primaryColor: data.primary_color,
         accentColor: data.accent_color,
         photo: data.photo,
+        headingTextColor: data.heading_text_color,
+        homeBackgroundPhoto: data.home_background_photo,
         paymentHeading: data.payment_heading,
         paymentSubheading: data.payment_subheading,
+        paymentSubheading2: data.payment_subheading2,
         paymentPhoto: data.payment_photo
       };
     }
@@ -806,13 +872,28 @@ function populateCustomizeForm(){
   document.getElementById('c-subheadline').value = siteConfig.subheadline;
   document.getElementById('c-color-primary').value = siteConfig.primaryColor;
   document.getElementById('c-color-accent').value = siteConfig.accentColor;
+  document.getElementById('c-heading-text-color').value = siteConfig.headingTextColor || DEFAULT_SITE_CONFIG.headingTextColor;
   photoDraft = siteConfig.photo;
   updatePhotoPreview();
+  homeBgPhotoDraft = siteConfig.homeBackgroundPhoto;
+  updateHomeBgPhotoPreview();
   document.getElementById('c-payment-heading').value = siteConfig.paymentHeading || '';
   document.getElementById('c-payment-subheading').value = siteConfig.paymentSubheading || '';
+  document.getElementById('c-payment-subheading-2').value = siteConfig.paymentSubheading2 || '';
   paymentPhotoDraft = siteConfig.paymentPhoto;
   updatePaymentPhotoPreview();
   document.getElementById('save-confirm').style.display = 'none';
+}
+
+function updateHomeBgPhotoPreview(){
+  const preview = document.getElementById('c-home-bg-photo-preview');
+  if(homeBgPhotoDraft){
+    preview.style.backgroundImage = `url(${homeBgPhotoDraft})`;
+    preview.textContent = '';
+  }else{
+    preview.style.backgroundImage = 'none';
+    preview.textContent = 'No background photo set';
+  }
 }
 
 function updatePhotoPreview(){
@@ -861,16 +942,11 @@ document.getElementById('c-photo-remove').addEventListener('click', ()=>{
 document.getElementById('c-payment-photo').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    if(reader.result.length > 4500000){
-      alert('That photo is too large. Please choose a smaller image.');
-      return;
-    }
-    paymentPhotoDraft = reader.result;
+  openCropModal(file, (croppedDataUrl)=>{
+    paymentPhotoDraft = croppedDataUrl;
     updatePaymentPhotoPreview();
-  };
-  reader.readAsDataURL(file);
+  });
+  e.target.value = '';
 });
 
 document.getElementById('c-payment-photo-remove').addEventListener('click', ()=>{
@@ -878,6 +954,119 @@ document.getElementById('c-payment-photo-remove').addEventListener('click', ()=>
   document.getElementById('c-payment-photo').value = '';
   updatePaymentPhotoPreview();
 });
+
+document.getElementById('c-home-bg-photo').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    if(reader.result.length > 4500000){
+      alert('That photo is too large. Please choose a smaller image.');
+      return;
+    }
+    homeBgPhotoDraft = reader.result;
+    updateHomeBgPhotoPreview();
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('c-home-bg-photo-remove').addEventListener('click', ()=>{
+  homeBgPhotoDraft = null;
+  document.getElementById('c-home-bg-photo').value = '';
+  updateHomeBgPhotoPreview();
+});
+
+// ==== Square photo crop modal (used for the payment photo) ====
+let cropState = { naturalW: 0, naturalH: 0, baseScale: 1, scale: 1, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, callback: null };
+const CROP_SIZE = 260;
+const CROP_OUTPUT = 480;
+
+function openCropModal(file, callback){
+  cropState.callback = callback;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = document.getElementById('crop-img');
+    img.onload = () => {
+      cropState.naturalW = img.naturalWidth;
+      cropState.naturalH = img.naturalHeight;
+      cropState.baseScale = Math.max(CROP_SIZE / cropState.naturalW, CROP_SIZE / cropState.naturalH);
+      cropState.scale = cropState.baseScale;
+      cropState.offsetX = (CROP_SIZE - cropState.naturalW * cropState.scale) / 2;
+      cropState.offsetY = (CROP_SIZE - cropState.naturalH * cropState.scale) / 2;
+      document.getElementById('crop-zoom').value = 100;
+      applyCropTransform();
+      document.getElementById('crop-modal').classList.add('active');
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clampCropOffsets(){
+  const dispW = cropState.naturalW * cropState.scale;
+  const dispH = cropState.naturalH * cropState.scale;
+  const minX = Math.min(0, CROP_SIZE - dispW);
+  const minY = Math.min(0, CROP_SIZE - dispH);
+  cropState.offsetX = Math.max(minX, Math.min(0, cropState.offsetX));
+  cropState.offsetY = Math.max(minY, Math.min(0, cropState.offsetY));
+}
+
+function applyCropTransform(){
+  clampCropOffsets();
+  const img = document.getElementById('crop-img');
+  img.style.width = (cropState.naturalW * cropState.scale) + 'px';
+  img.style.height = (cropState.naturalH * cropState.scale) + 'px';
+  img.style.left = cropState.offsetX + 'px';
+  img.style.top = cropState.offsetY + 'px';
+}
+
+document.getElementById('crop-zoom').addEventListener('input', (e)=>{
+  const factor = e.target.value / 100;
+  const newScale = cropState.baseScale * factor;
+  const cx = CROP_SIZE / 2, cy = CROP_SIZE / 2;
+  const imgCx = (cx - cropState.offsetX) / cropState.scale;
+  const imgCy = (cy - cropState.offsetY) / cropState.scale;
+  cropState.scale = newScale;
+  cropState.offsetX = cx - imgCx * cropState.scale;
+  cropState.offsetY = cy - imgCy * cropState.scale;
+  applyCropTransform();
+});
+
+const cropContainer = document.getElementById('crop-container');
+cropContainer.addEventListener('pointerdown', (e)=>{
+  cropState.dragging = true;
+  cropState.startX = e.clientX - cropState.offsetX;
+  cropState.startY = e.clientY - cropState.offsetY;
+  cropContainer.setPointerCapture(e.pointerId);
+});
+cropContainer.addEventListener('pointermove', (e)=>{
+  if(!cropState.dragging) return;
+  cropState.offsetX = e.clientX - cropState.startX;
+  cropState.offsetY = e.clientY - cropState.startY;
+  applyCropTransform();
+});
+cropContainer.addEventListener('pointerup', ()=>{ cropState.dragging = false; });
+cropContainer.addEventListener('pointercancel', ()=>{ cropState.dragging = false; });
+
+function closeCropModal(){
+  document.getElementById('crop-modal').classList.remove('active');
+  cropState.callback = null;
+}
+
+function applyCrop(){
+  const canvas = document.createElement('canvas');
+  canvas.width = CROP_OUTPUT;
+  canvas.height = CROP_OUTPUT;
+  const ctx = canvas.getContext('2d');
+  const img = document.getElementById('crop-img');
+  const sx = -cropState.offsetX / cropState.scale;
+  const sy = -cropState.offsetY / cropState.scale;
+  const sSize = CROP_SIZE / cropState.scale;
+  ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, CROP_OUTPUT, CROP_OUTPUT);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  if(cropState.callback) cropState.callback(dataUrl);
+  closeCropModal();
+}
 
 document.getElementById('btn-save-design').addEventListener('click', async ()=>{
   const newConfig = {
