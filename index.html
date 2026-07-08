@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seminar Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -603,6 +606,15 @@
 
       <label for="c-heading-text-color">Heading text color</label>
       <input type="color" id="c-heading-text-color" value="#000000">
+
+      <label for="c-heading-font">Heading font</label>
+      <select id="c-heading-font">
+        <option value="default">Default</option>
+        <option value="aptos">Aptos</option>
+        <option value="poppins-bold">Poppins Bold</option>
+        <option value="poppins-extrabold">Poppins Extra Bold</option>
+      </select>
+      <p class="hint" style="margin-top:4px;">Applies to the heading and subheading shown over the header/home photo.</p>
       <p class="hint" style="margin-top:4px;">Color of the heading/subheading text shown over the header and home page photos.</p>
 
       <label style="margin-top:20px;">Home page background photo</label>
@@ -799,6 +811,7 @@ const DEFAULT_SITE_CONFIG = {
   accentColor: "#B8912B",
   photo: null,
   headingTextColor: "#000000",
+  headingFont: "default",
   homeBackgroundPhoto: null,
   paymentHeading: "Payment Instructions",
   paymentSubheading: "",
@@ -810,6 +823,13 @@ let photoDraft = null;
 let paymentPhotoDraft = null;
 let homeBgPhotoDraft = null;
 
+const HEADING_FONT_OPTIONS = {
+  'default': { fontFamily: 'var(--sans)', fontWeight: '800' },
+  'aptos': { fontFamily: "'Aptos', var(--sans)", fontWeight: '800' },
+  'poppins-bold': { fontFamily: "'Poppins', var(--sans)", fontWeight: '700' },
+  'poppins-extrabold': { fontFamily: "'Poppins', var(--sans)", fontWeight: '800' }
+};
+
 function applySiteConfig(cfg){
   document.getElementById('site-headline').textContent = cfg.headline;
   document.getElementById('site-subheadline').textContent = cfg.subheadline;
@@ -819,6 +839,11 @@ function applySiteConfig(cfg){
   const headingColor = cfg.headingTextColor || DEFAULT_SITE_CONFIG.headingTextColor;
   document.getElementById('site-headline').style.color = headingColor;
   document.getElementById('site-subheadline').style.color = headingColor;
+  const fontStyle = HEADING_FONT_OPTIONS[cfg.headingFont] || HEADING_FONT_OPTIONS.default;
+  document.getElementById('site-headline').style.fontFamily = fontStyle.fontFamily;
+  document.getElementById('site-headline').style.fontWeight = fontStyle.fontWeight;
+  document.getElementById('site-subheadline').style.fontFamily = fontStyle.fontFamily;
+  document.getElementById('site-subheadline').style.fontWeight = fontStyle.fontWeight;
   const header = document.getElementById('site-header');
   if(cfg.photo){
     header.style.backgroundImage = `url(${cfg.photo})`;
@@ -856,6 +881,7 @@ async function loadSiteConfig(){
         accentColor: data.accent_color,
         photo: data.photo,
         headingTextColor: data.heading_text_color,
+        headingFont: data.heading_font,
         homeBackgroundPhoto: data.home_background_photo,
         paymentHeading: data.payment_heading,
         paymentSubheading: data.payment_subheading,
@@ -873,6 +899,7 @@ function populateCustomizeForm(){
   document.getElementById('c-color-primary').value = siteConfig.primaryColor;
   document.getElementById('c-color-accent').value = siteConfig.accentColor;
   document.getElementById('c-heading-text-color').value = siteConfig.headingTextColor || DEFAULT_SITE_CONFIG.headingTextColor;
+  document.getElementById('c-heading-font').value = siteConfig.headingFont || DEFAULT_SITE_CONFIG.headingFont;
   photoDraft = siteConfig.photo;
   updatePhotoPreview();
   homeBgPhotoDraft = siteConfig.homeBackgroundPhoto;
@@ -1100,6 +1127,7 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
     accentColor: document.getElementById('c-color-accent').value,
     photo: photoDraft,
     headingTextColor: document.getElementById('c-heading-text-color').value,
+    headingFont: document.getElementById('c-heading-font').value,
     homeBackgroundPhoto: homeBgPhotoDraft,
     paymentHeading: document.getElementById('c-payment-heading').value.trim() || DEFAULT_SITE_CONFIG.paymentHeading,
     paymentSubheading: document.getElementById('c-payment-subheading').value.trim(),
@@ -1116,6 +1144,7 @@ document.getElementById('btn-save-design').addEventListener('click', async ()=>{
       accent_color: newConfig.accentColor,
       photo: newConfig.photo,
       heading_text_color: newConfig.headingTextColor,
+      heading_font: newConfig.headingFont,
       home_background_photo: newConfig.homeBackgroundPhoto,
       payment_heading: newConfig.paymentHeading,
       payment_subheading: newConfig.paymentSubheading,
