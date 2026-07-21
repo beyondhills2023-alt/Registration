@@ -409,6 +409,14 @@
     <!-- REGISTER -->
     <section id="view-register" class="view">
       <p style="margin:0 0 16px;"><button class="link-btn" onclick="showView('home')">&larr; Back to home</button></p>
+
+      <div id="register-closed-message" style="display:none;">
+        <div class="not-found" style="text-align:center; font-size:15px;">
+          Registration is currently closed. Please check back later or contact the organizers.
+        </div>
+      </div>
+
+      <div id="register-form-fields">
       <label for="f-name">Full name</label>
       <input type="text" id="f-name" placeholder="Juan Dela Cruz">
 
@@ -489,6 +497,7 @@
       <button class="btn btn-primary btn-block" id="btn-register">Generate my ID</button>
       <div id="register-error"></div>
       <p class="hint">Submitting saves your details and generates a personal QR code and ID number.</p>
+      </div>
     </section>
 
     <!-- GUEST LOGIN -->
@@ -685,6 +694,14 @@
         <button class="link-btn" onclick="logout('admin')">Log out</button>
       </div>
 
+      <div style="background:var(--paper-dark); border-radius:8px; padding:14px 16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong style="font-size:13.5px;">Registration status: </strong>
+          <span id="registration-status-label" style="font-weight:700;">Loading…</span>
+        </div>
+        <button class="btn btn-outline" id="btn-toggle-registration">Toggle</button>
+      </div>
+
       <details class="admin-collapsible">
         <summary>Manage schools</summary>
         <div class="admin-collapsible-body">
@@ -748,6 +765,17 @@
   </div>
 </div>
 
+<!-- REGISTRANT DETAIL MODAL (admin) -->
+<div class="modal-overlay" id="registrant-detail-modal">
+  <div class="modal-box" style="max-width:480px; text-align:left;">
+    <h3 style="text-align:center;">Attendee details</h3>
+    <div id="registrant-detail-content" style="margin-top:10px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeRegistrantDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- CROP PHOTO MODAL (square output, used for payment photo) -->
 <div class="modal-overlay" id="crop-modal">
   <div class="modal-box">
@@ -805,6 +833,7 @@ let scanStream = null;
 const STAFF_CODE = "STAFF2026";
 const ADMIN_CODE = "ADMIN2026";
 const GUEST_ACCESS_PASSWORD = "PROTEGE2026";
+const REGISTRATION_TOGGLE_PASSWORD = "SAVEDANDSENT";
 const MODERATOR_CODE = "MODERATOR2026";
 let moderatorUnlocked = false;
 
@@ -837,6 +866,7 @@ const DEFAULT_SITE_CONFIG = {
   photo: null,
   headingTextColor: "#000000",
   headingFont: "default",
+  registrationOpen: true,
   homeBackgroundPhoto: null,
   paymentHeading: "Payment Instructions",
   paymentSubheading: "",
@@ -861,6 +891,14 @@ function applySiteConfig(cfg){
   document.documentElement.style.setProperty('--navy', cfg.primaryColor);
   document.documentElement.style.setProperty('--navy-light', cfg.primaryColor);
   document.documentElement.style.setProperty('--brass', cfg.accentColor);
+  const isOpen = cfg.registrationOpen !== false;
+  document.getElementById('register-form-fields').style.display = isOpen ? '' : 'none';
+  document.getElementById('register-closed-message').style.display = isOpen ? 'none' : 'block';
+  const statusLabel = document.getElementById('registration-status-label');
+  if(statusLabel){
+    statusLabel.textContent = isOpen ? 'Open' : 'Closed';
+    statusLabel.style.color = isOpen ? 'var(--teal)' : 'var(--red)';
+  }
   const headingColor = cfg.headingTextColor || DEFAULT_SITE_CONFIG.headingTextColor;
   document.getElementById('site-headline').style.color = headingColor;
   document.getElementById('site-subheadline').style.color = headingColor;
@@ -907,6 +945,7 @@ async function loadSiteConfig(){
         photo: data.photo,
         headingTextColor: data.heading_text_color,
         headingFont: data.heading_font,
+        registrationOpen: data.registration_open !== false,
         homeBackgroundPhoto: data.home_background_photo,
         paymentHeading: data.payment_heading,
         paymentSubheading: data.payment_subheading,
@@ -1520,6 +1559,10 @@ async function removeNetworkLeader(index){
 }
 
 async function registerUser(){
+  if(siteConfig.registrationOpen === false){
+    document.getElementById('register-error').innerHTML = '<div class="error-box">Registration is currently closed.</div>';
+    return;
+  }
   const name = document.getElementById('f-name').value.trim();
   const address = document.getElementById('f-address').value.trim();
   const lifeGuide = document.getElementById('f-life-guide').value.trim();
@@ -1899,26 +1942,14 @@ async function loadAllRegistrants(){
         <td>${escapeHtml(r.name)}</td>
         <td>${escapeHtml(r.lifeGuide || '')}</td>
         <td>${escapeHtml(r.networkLeader || '')}</td>
-        <td>${escapeHtml(r.school || '')}</td>
-        <td>${escapeHtml(r.status)}</td>
-        <td>${escapeHtml(r.profession || '')}</td>
-        <td>${escapeHtml(r.level || '')}</td>
-        <td>${escapeHtml(r.address)}</td>
-        <td>${escapeHtml(r.phone)}</td>
         <td>${r.paid ? 'Yes' : 'Not yet'}</td>
-        <td>${new Date(r.registeredAt).toLocaleString()}</td>
         <td>
           ${r.checkedIn
-            ? `<span style="color:var(--teal); font-weight:600;">Checked in</span><br><span class="hint">${new Date(r.checkedInAt).toLocaleString()}</span>`
+            ? `<span style="color:var(--teal); font-weight:600;">Checked in</span>`
             : `<span style="color:var(--ink-soft);">Not yet</span>`}
         </td>
         <td>
-          <span class="status-pill ${r.paymentVerified ? 'green' : 'red'}">${r.paymentVerified ? 'Verified' : 'Not verified'}</span>
-        </td>
-        <td>
-          <button class="link-btn" onclick="viewReceipt('${r.id}')">View receipt</button>
-        </td>
-        <td>
+          <button class="link-btn" onclick="viewRegistrantDetails('${r.id}')">View details</button><br>
           <button class="link-btn" onclick="toggleVerified('${r.id}', ${r.paymentVerified ? 'false' : 'true'})">${r.paymentVerified ? 'Unmark verified' : 'Mark verified'}</button><br>
           <button class="link-btn" onclick="toggleCheckedIn('${r.id}', ${r.checkedIn ? 'false' : 'true'})">${r.checkedIn ? 'Undo check-in' : 'Check in'}</button><br>
           <button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button>
@@ -1931,7 +1962,7 @@ async function loadAllRegistrants(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>School</th><th>Status</th><th>Profession</th><th>Grade level</th><th>Address</th><th>Phone</th><th>Paid</th><th>Registered</th><th>Check-in</th><th>Payment</th><th>Receipt</th><th>Actions</th>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>Paid</th><th>Check-in</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1942,6 +1973,27 @@ async function loadAllRegistrants(){
   }
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
+
+document.getElementById('btn-toggle-registration').addEventListener('click', async ()=>{
+  const currentlyOpen = siteConfig.registrationOpen !== false;
+  const action = currentlyOpen ? 'CLOSE' : 'OPEN';
+  const entered = window.prompt(`Enter the password to ${action} registration:`);
+  if(entered === null) return;
+  if(entered !== REGISTRATION_TOGGLE_PASSWORD){
+    alert('Incorrect password.');
+    return;
+  }
+  const newValue = !currentlyOpen;
+  try{
+    const { error } = await sb.from('site_config').update({ registration_open: newValue }).eq('id', 1);
+    if(error) throw error;
+    siteConfig.registrationOpen = newValue;
+    applySiteConfig(siteConfig);
+    alert(`Registration is now ${newValue ? 'OPEN' : 'CLOSED'}.`);
+  }catch(e){
+    alert('Could not update registration status. Please try again.');
+  }
+});
 
 async function viewReceipt(id){
   const holder = document.getElementById('receipt-modal-content');
@@ -1958,6 +2010,40 @@ async function viewReceipt(id){
   }catch(e){
     holder.innerHTML = '<p class="hint">Could not load the receipt. Please try again.</p>';
   }
+}
+
+function viewRegistrantDetails(id){
+  const r = (window.__allRecords || []).find(rec => rec.id === id);
+  const holder = document.getElementById('registrant-detail-content');
+  if(!r){
+    holder.innerHTML = '<p class="hint">Could not find that attendee. Try reloading the list.</p>';
+    document.getElementById('registrant-detail-modal').classList.add('active');
+    return;
+  }
+  holder.innerHTML = `
+    <div class="result-card">
+      <div class="row"><span class="k">ID number</span><span>${r.id}</span></div>
+      <div class="row"><span class="k">Name</span><span>${escapeHtml(r.name)}</span></div>
+      <div class="row"><span class="k">Life guide</span><span>${escapeHtml(r.lifeGuide || '')}</span></div>
+      <div class="row"><span class="k">Network leader</span><span>${escapeHtml(r.networkLeader || '')}</span></div>
+      <div class="row"><span class="k">School</span><span>${escapeHtml(r.school || '')}</span></div>
+      <div class="row"><span class="k">Status</span><span>${escapeHtml(r.status)}</span></div>
+      ${r.profession ? `<div class="row"><span class="k">Profession</span><span>${escapeHtml(r.profession)}</span></div>` : ''}
+      ${r.level ? `<div class="row"><span class="k">Grade level</span><span>${escapeHtml(r.level)}</span></div>` : ''}
+      <div class="row"><span class="k">Address</span><span>${escapeHtml(r.address)}</span></div>
+      <div class="row"><span class="k">Phone</span><span>${escapeHtml(r.phone)}</span></div>
+      <div class="row"><span class="k">Paid (self-reported)</span><span>${r.paid ? 'Yes' : 'Not yet'}</span></div>
+      <div class="row"><span class="k">Registered</span><span>${new Date(r.registeredAt).toLocaleString()}</span></div>
+      <div class="row"><span class="k">Checked in</span><span>${r.checkedIn ? new Date(r.checkedInAt).toLocaleString() : 'Not yet'}</span></div>
+      <div class="row"><span class="k">Payment verified</span><span>${r.paymentVerified ? new Date(r.paymentVerifiedAt).toLocaleString() : 'Not yet'}</span></div>
+    </div>
+    <button class="btn btn-outline btn-block" style="margin-top:12px;" onclick="viewReceipt('${r.id}')">View payment receipt</button>
+  `;
+  document.getElementById('registrant-detail-modal').classList.add('active');
+}
+
+function closeRegistrantDetailModal(){
+  document.getElementById('registrant-detail-modal').classList.remove('active');
 }
 
 function closeReceiptModal(){
