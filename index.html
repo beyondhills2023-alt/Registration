@@ -1942,7 +1942,9 @@ async function loadAllRegistrants(){
         <td>${escapeHtml(r.name)}</td>
         <td>${escapeHtml(r.lifeGuide || '')}</td>
         <td>${escapeHtml(r.networkLeader || '')}</td>
-        <td>${r.paid ? 'Yes' : 'Not yet'}</td>
+        <td>
+          <span class="status-pill ${r.paymentVerified ? 'green' : 'red'}">${r.paymentVerified ? 'Verified' : 'Not verified'}</span>
+        </td>
         <td>
           ${r.checkedIn
             ? `<span style="color:var(--teal); font-weight:600;">Checked in</span>`
@@ -1950,6 +1952,7 @@ async function loadAllRegistrants(){
         </td>
         <td>
           <button class="link-btn" onclick="viewRegistrantDetails('${r.id}')">View details</button><br>
+          <button class="link-btn" onclick="viewReceipt('${r.id}')">View receipt</button><br>
           <button class="link-btn" onclick="toggleVerified('${r.id}', ${r.paymentVerified ? 'false' : 'true'})">${r.paymentVerified ? 'Unmark verified' : 'Mark verified'}</button><br>
           <button class="link-btn" onclick="toggleCheckedIn('${r.id}', ${r.checkedIn ? 'false' : 'true'})">${r.checkedIn ? 'Undo check-in' : 'Check in'}</button><br>
           <button class="link-btn" style="color:var(--red);" onclick="deleteRegistrant('${r.id}')">Delete</button>
@@ -1962,7 +1965,7 @@ async function loadAllRegistrants(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>Paid</th><th>Check-in</th><th>Actions</th>
+              <th>ID</th><th>Name</th><th>Life guide</th><th>Network leader</th><th>Payment</th><th>Check-in</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
