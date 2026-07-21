@@ -1857,7 +1857,9 @@ async function loadAllRegistrants(){
   const content = document.getElementById('admin-content');
   content.innerHTML = '<p class="hint">Loading…</p>';
   try{
-    const { data, error } = await sb.from('registrants').select('*').order('registered_at', { ascending: false });
+    const { data, error } = await sb.from('registrants')
+      .select('id,name,address,life_guide,network_leader,school,status,level,profession,phone,paid,registered_at,checked_in,checked_in_at,payment_verified,payment_verified_at')
+      .order('registered_at', { ascending: false });
     if(error) throw error;
     const records = (data || []).map(mapRowToRecord);
     if(records.length === 0){
@@ -1889,7 +1891,7 @@ async function loadAllRegistrants(){
           <span class="status-pill ${r.paymentVerified ? 'green' : 'red'}">${r.paymentVerified ? 'Verified' : 'Not verified'}</span>
         </td>
         <td>
-          ${r.receiptPhoto ? `<button class="link-btn" onclick="viewReceipt('${r.id}')">View receipt</button>` : `<span class="hint">None uploaded</span>`}
+          <button class="link-btn" onclick="viewReceipt('${r.id}')">View receipt</button>
         </td>
         <td>
           <button class="link-btn" onclick="toggleVerified('${r.id}', ${r.paymentVerified ? 'false' : 'true'})">${r.paymentVerified ? 'Unmark verified' : 'Mark verified'}</button><br>
@@ -1916,15 +1918,21 @@ async function loadAllRegistrants(){
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
 
-function viewReceipt(id){
-  const record = (window.__allRecords || []).find(r => r.id === id);
+async function viewReceipt(id){
   const holder = document.getElementById('receipt-modal-content');
-  if(record && record.receiptPhoto){
-    holder.innerHTML = `<img src="${record.receiptPhoto}">`;
-  }else{
-    holder.innerHTML = '<p class="hint">No receipt on file.</p>';
-  }
+  holder.innerHTML = '<p class="hint">Loading receipt…</p>';
   document.getElementById('receipt-modal').classList.add('active');
+  try{
+    const { data, error } = await sb.from('registrants').select('receipt_photo').eq('id', id).maybeSingle();
+    if(error) throw error;
+    if(data && data.receipt_photo){
+      holder.innerHTML = `<img src="${data.receipt_photo}">`;
+    }else{
+      holder.innerHTML = '<p class="hint">No receipt on file.</p>';
+    }
+  }catch(e){
+    holder.innerHTML = '<p class="hint">Could not load the receipt. Please try again.</p>';
+  }
 }
 
 function closeReceiptModal(){
