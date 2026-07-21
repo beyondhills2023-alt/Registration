@@ -43,6 +43,11 @@
     display:flex;
     flex-direction:column;
   }
+  @media (min-width:900px){
+    .app:has(#view-admin.active){
+      max-width:1200px;
+    }
+  }
   header.top{
     background:var(--navy);
     color:var(--paper);
@@ -271,6 +276,22 @@
 
   /* Admin */
   .admin-toolbar{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+
+  .admin-collapsible{
+    background:var(--paper-dark); border-radius:8px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .admin-collapsible summary{
+    font-size:13.5px; font-weight:700; cursor:pointer;
+    list-style:none; display:flex; align-items:center; justify-content:space-between;
+  }
+  .admin-collapsible summary::-webkit-details-marker{ display:none; }
+  .admin-collapsible summary::after{
+    content:'▾'; font-size:12px; color:var(--ink-soft); margin-left:8px;
+    transition:transform 0.15s ease;
+  }
+  .admin-collapsible[open] summary::after{ transform:rotate(180deg); }
+  .admin-collapsible-body{ margin-top:2px; }
   table.admin-table{width:100%; border-collapse:collapse; font-size:12.5px;}
   table.admin-table th{
     text-align:left; background:var(--navy); color:var(--paper);
@@ -664,25 +685,29 @@
         <button class="link-btn" onclick="logout('admin')">Log out</button>
       </div>
 
-      <div style="background:var(--paper-dark); border-radius:8px; padding:14px 16px; margin-bottom:20px;">
-        <strong style="font-size:13.5px;">Manage schools</strong>
-        <p class="hint" style="margin-top:2px;">These are the schools attendees can choose from on the registration form.</p>
-        <div class="lookup-row" style="margin-top:10px;">
-          <input type="text" id="admin-school-input" placeholder="Add a school name">
-          <button class="btn btn-outline" id="btn-add-school">Add</button>
+      <details class="admin-collapsible">
+        <summary>Manage schools</summary>
+        <div class="admin-collapsible-body">
+          <p class="hint" style="margin-top:2px;">These are the schools attendees can choose from on the registration form.</p>
+          <div class="lookup-row" style="margin-top:10px;">
+            <input type="text" id="admin-school-input" placeholder="Add a school name">
+            <button class="btn btn-outline" id="btn-add-school">Add</button>
+          </div>
+          <div id="admin-school-list" style="margin-top:10px;"></div>
         </div>
-        <div id="admin-school-list" style="margin-top:10px;"></div>
-      </div>
+      </details>
 
-      <div style="background:var(--paper-dark); border-radius:8px; padding:14px 16px; margin-bottom:20px;">
-        <strong style="font-size:13.5px;">Manage network leaders</strong>
-        <p class="hint" style="margin-top:2px;">These are the network leaders attendees can choose from on the registration form.</p>
-        <div class="lookup-row" style="margin-top:10px;">
-          <input type="text" id="admin-network-leader-input" placeholder="Add a network leader's name">
-          <button class="btn btn-outline" id="btn-add-network-leader">Add</button>
+      <details class="admin-collapsible">
+        <summary>Manage network leaders</summary>
+        <div class="admin-collapsible-body">
+          <p class="hint" style="margin-top:2px;">These are the network leaders attendees can choose from on the registration form.</p>
+          <div class="lookup-row" style="margin-top:10px;">
+            <input type="text" id="admin-network-leader-input" placeholder="Add a network leader's name">
+            <button class="btn btn-outline" id="btn-add-network-leader">Add</button>
+          </div>
+          <div id="admin-network-leader-list" style="margin-top:10px;"></div>
         </div>
-        <div id="admin-network-leader-list" style="margin-top:10px;"></div>
-      </div>
+      </details>
 
       <div class="admin-toolbar">
         <button class="btn btn-primary" id="btn-load-all">Load all guests</button>
