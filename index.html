@@ -730,7 +730,16 @@
         <button class="btn btn-primary" id="btn-load-all">Load all guests</button>
         <button class="btn btn-outline" id="btn-export">Export to CSV (Excel)</button>
       </div>
-      <div id="admin-content"></div>
+
+      <div class="lookup-row" style="margin-top:4px;">
+        <input type="text" id="admin-search" placeholder="Search by name or ID number...">
+      </div>
+      <label for="admin-filter-network-leader" style="margin-top:10px;">Filter by network leader</label>
+      <select id="admin-filter-network-leader">
+        <option value="">All network leaders</option>
+      </select>
+
+      <div id="admin-content" style="margin-top:16px;"></div>
     </section>
 
   </main>
@@ -1930,13 +1939,52 @@ async function loadAllRegistrants(){
       .order('registered_at', { ascending: false });
     if(error) throw error;
     const records = (data || []).map(mapRowToRecord);
-    if(records.length === 0){
-      content.innerHTML = '<div class="empty-state"><p>No guests registered yet.</p></div>';
-      return;
-    }
     window.__allRecords = records;
+    populateAdminNetworkLeaderFilter(records);
+    renderAdminTable(records);
+  }catch(e){
+    content.innerHTML = '<div class="not-found">Could not load guest list.</div>';
+  }
+}
 
-    let rows = records.map(r => `
+function populateAdminNetworkLeaderFilter(records){
+  const select = document.getElementById('admin-filter-network-leader');
+  const previousValue = select.value;
+  const names = Array.from(new Set(records.map(r => r.networkLeader).filter(Boolean))).sort();
+  select.innerHTML = '<option value="">All network leaders</option>' +
+    names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if(names.includes(previousValue)) select.value = previousValue;
+}
+
+function applyAdminFilters(){
+  const all = window.__allRecords || [];
+  const searchTerm = (document.getElementById('admin-search').value || '').trim().toLowerCase();
+  const networkLeaderFilter = document.getElementById('admin-filter-network-leader').value;
+  const filtered = all.filter(r => {
+    const matchesSearch = !searchTerm ||
+      (r.name || '').toLowerCase().includes(searchTerm) ||
+      (r.id || '').toLowerCase().includes(searchTerm);
+    const matchesLeader = !networkLeaderFilter || r.networkLeader === networkLeaderFilter;
+    return matchesSearch && matchesLeader;
+  });
+  renderAdminTable(filtered, all.length);
+}
+
+document.getElementById('admin-search').addEventListener('input', applyAdminFilters);
+document.getElementById('admin-filter-network-leader').addEventListener('change', applyAdminFilters);
+
+function renderAdminTable(records, totalCount){
+  const content = document.getElementById('admin-content');
+  if(!window.__allRecords || window.__allRecords.length === 0){
+    content.innerHTML = '<div class="empty-state"><p>No guests registered yet.</p></div>';
+    return;
+  }
+  if(records.length === 0){
+    content.innerHTML = `<div class="count-tag">0 of ${totalCount || window.__allRecords.length} attendees match your search/filter</div><div class="not-found">No matching guests found.</div>`;
+    return;
+  }
+
+  let rows = records.map(r => `
       <tr>
         <td>${r.id}</td>
         <td>${escapeHtml(r.name)}</td>
@@ -1959,8 +2007,12 @@ async function loadAllRegistrants(){
         </td>
       </tr>`).join('');
 
-    content.innerHTML = `
-      <div class="count-tag">${records.length} attendee${records.length===1?'':'s'} registered</div>
+  const totalLabel = totalCount && totalCount !== records.length
+    ? `${records.length} of ${totalCount} attendees shown (filtered)`
+    : `${records.length} attendee${records.length===1?'':'s'} registered`;
+
+  content.innerHTML = `
+      <div class="count-tag">${totalLabel}</div>
       <div class="table-scroll">
         <table class="admin-table">
           <thead>
@@ -1971,9 +2023,6 @@ async function loadAllRegistrants(){
           <tbody>${rows}</tbody>
         </table>
       </div>`;
-  }catch(e){
-    content.innerHTML = '<div class="not-found">Could not load guest list.</div>';
-  }
 }
 document.getElementById('btn-load-all').addEventListener('click', loadAllRegistrants);
 
@@ -2061,6 +2110,7 @@ async function toggleVerified(id, newValue){
     }).eq('id', id);
     if(error) throw error;
     await loadAllRegistrants();
+    applyAdminFilters();
   }catch(e){
     alert('Could not update payment verification. Please try again.');
   }
@@ -2074,6 +2124,7 @@ async function toggleCheckedIn(id, newValue){
     }).eq('id', id);
     if(error) throw error;
     await loadAllRegistrants();
+    applyAdminFilters();
   }catch(e){
     alert('Could not update check-in status. Please try again.');
   }
@@ -2086,6 +2137,7 @@ async function deleteRegistrant(id){
     const { error } = await sb.from('registrants').delete().eq('id', id);
     if(error) throw error;
     await loadAllRegistrants();
+    applyAdminFilters();
   }catch(e){
     alert('Could not delete this registrant. Please try again.');
   }
